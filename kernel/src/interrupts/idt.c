@@ -7,22 +7,6 @@
 
 #include "interface/terminal.h"
 
-void idt_handle(uint32_t* i, stack_state stack_s)
-//void idt_handle(uint8_t* data)
-{
-    uint32_t interrupt = (*i) >> 24;
-
-    if (interrupt == 0xC6)
-        return;
-
-    terminal_writehex(interrupt);
-
-    if (interrupt > PIC1_SI && interrupt < PIC2_EI)
-    {
-        pic_handle(interrupt - PIC1_SI);
-    }
-}
-
 void (*interrupt_handler_addresses[256])() =
 {
     interrupt_handler_0,

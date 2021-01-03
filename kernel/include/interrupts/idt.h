@@ -56,6 +56,3 @@ struct stack_state
     uint32_t cs;
     uint32_t eflags;
 } __attribute__((packed));
-
-void idt_handle(uint32_t* i, stack_state stack_s);
-//void idt_handle(uint8_t* data);

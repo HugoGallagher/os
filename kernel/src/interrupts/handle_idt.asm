@@ -1,5 +1,3 @@
-extern idt_handle
-
 %macro no_error_interrupt_handler 1
 global interrupt_handler_%1
 interrupt_handler_%1:
