@@ -18,10 +18,10 @@ void heap_init(Heap* heap, uint64_t size, void* start)
     // very bad idea, should later be changed to save memory via a case-optimised linked list
 
     bzero(heap->data, heap->data_size);
-    bzero(heap->nodes, heap->max_allocations * sizeof(LLNode));
+    bzero(heap->nodes, heap->max_allocations * sizeof(LinkedList1Node));
 
     heap->nodes->data = (uint64_t)HEAP_SIZE;
-    ll_push_front(&(heap->spaces), heap->nodes);
+    ll1_push_front(&(heap->spaces), heap->nodes);
 
     //ll_push_front(heap->allocations, *(heap->nodes));
 }
@@ -35,7 +35,7 @@ void* kmalloc(uint64_t s)
     s += 16 - (s % 16); // align to 16 bytes
     uint64_t segments_needed = s / 16;
 
-    LLNode* current_node = kernel_heap.nodes;
+    LinkedList1Node* current_node = kernel_heap.nodes;
     bool found_suitable_node = false;
     for (uint64_t i = 0; i < kernel_heap.max_allocations; i++)
     {
@@ -46,7 +46,7 @@ void* kmalloc(uint64_t s)
             current_node->data = (uint64_t)(current_node->data) - s;
             if ((uint64_t)(current_node->data) == 0)
             {
-                ll_remove(&(kernel_heap.spaces), current_node);
+                ll1_remove(&(kernel_heap.spaces), current_node);
             }
 
             break;

@@ -21,14 +21,14 @@ struct HeapAllocation
 
 struct Heap
 {
-    uint64_t max_allocations; // assumes a minimum level of fragmentation    
+    uint64_t max_allocations; // assumes a minimum level of fragmentation
     uint64_t data_size;
 
     uint8_t* data;
-    LLNode* nodes;
+    LinkedList1Node* nodes;
     uint16_t nodes_size;
 
-    LinkedList spaces;
+    LinkedList1 spaces;
 };
 
 static Heap kernel_heap;

@@ -27,7 +27,7 @@ void pageallocater_init(PageAllocater* pt, char* start)
     pt->all_n = start + HEAP_SIZE + sizeof(Page) * PAGE_COUNT;
 
     bzero(pt->all_p, sizeof(Page) * PAGE_COUNT);
-    bzero(pt->all_n, sizeof(LLNode) * PAGE_COUNT);
+    bzero(pt->all_n, sizeof(LinkedList2Node) * PAGE_COUNT);
 
     uint32_t kernel_page_count = (uint32_t)((uint32_t)kernel_end / PAGE_SIZE);
 
@@ -43,7 +43,7 @@ void pageallocater_init(PageAllocater* pt, char* start)
         }
         else
         {
-            ll_push_front(&(pt->free), pt->all_n + i);
+            ll2_push_front(&(pt->free), pt->all_n + i);
             page_set_flag(pt->all_p + i, pf_allocated, false);
         }
     }
@@ -53,7 +53,7 @@ void* pageallocater_alloc(PageAllocater* pt)
 {
     if (pt->free.head == pt->free.tail) { return 0; }
 
-    LLNode* node = ll_remove_front(&(pt->free));
+    LinkedList2Node* node = ll2_remove_front(&(pt->free));
     Page* page = node->data;
     page->addr = (void*)((page - pt->all_p) * PAGE_SIZE);
 
@@ -73,5 +73,5 @@ void pageallocater_free(PageAllocater* pt, void* addr)
     page_set_flag(page, pf_allocated, false);
     page_set_flag(page, pf_kernel, false);
 
-    ll_push_front(&pt->free, &pt->all_n[(uint64_t)addr/PAGE_SIZE]);
+    ll2_push_front(&pt->free, &pt->all_n[(uint64_t)addr/PAGE_SIZE]);
 }

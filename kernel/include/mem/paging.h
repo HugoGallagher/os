@@ -22,9 +22,9 @@ struct Page
 struct PageAllocater
 {
     Page* all_p;
-    LLNode* all_n;
+    LinkedList2Node* all_n;
 
-    LinkedList free;
+    LinkedList2 free;
 };
 
 void page_set_flag(Page* p, uint32_t pf, bool s);

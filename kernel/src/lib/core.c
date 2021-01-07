@@ -4,10 +4,12 @@
 
 void bzero(void *s, size_t n)
 {
+    uint8_t* s_as_array = s;
+
     for (size_t i = 0; i <= (n - 1); i++)
     {
         //terminal_writehex(s + i);
-        *(uint8_t*)(s + i) = 0;
+        s_as_array[i] = 0;
     }
 }
 

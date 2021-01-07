@@ -31,6 +31,8 @@ void kernel_main(void)
 
     pic_remap();
 
+    heap_init(&kernel_heap, 1, kernel_end);
+
     kernel_loop();
 }
 
