@@ -3,51 +3,50 @@
 
 #include "lib/mem.h"
 
-void heap_init(Heap* heap, uint64_t size, void* start)
+#include "interface/terminal.h"
+
+Heap kernel_heap;
+
+void heap_init(Heap* heap, void* start, uint32_t size)
 {
-    if ((size % 16) != 0) { return; }
+    size--;
+    size += 16 - (size % 16); // align to 16 bytes
 
-    heap->data = start;
-    heap->data_size = size;
-
-    uint64_t alloc_count = size / 16;
-
-    heap->nodes = size + (uint64_t)start;
-    heap->max_allocations = alloc_count / 16;
+    uint32_t alloc_count = size / 16;
+    uint32_t max_allocs = alloc_count / 16;
     // ^ this saves memory by assuming that the heap will never reach a certain point of fragmentation
-    // very bad idea, should later be changed to save memory via a case-optimised linked list
 
-    bzero(heap->data, heap->data_size);
-    bzero(heap->nodes, heap->max_allocations * sizeof(LinkedList1Node));
+    heap->start = start;
+    heap->max_allocs = max_allocs;
 
-    heap->nodes->data = (uint64_t)HEAP_SIZE;
-    ll1_push_front(&(heap->spaces), heap->nodes);
-
-    //ll_push_front(heap->allocations, *(heap->nodes));
+    ll1_init(&(heap->allocs), start, max_allocs);
+    ll1_push_front(&(heap->allocs), ((uint8_t*)start) + size);
+    ll1_push_front(&(heap->allocs), start);
 }
 
 // uses kernel_heap
 // finds a 16-byte aligned space in heap memory large enough to store the variable
 // if there isnt a space large enough it will just return 0
-// heap allocations are stored in a linked list, which tracks gaps in the heap
-void* kmalloc(uint64_t s)
+// heap allocations are stored in a linked list, which tracks the starts of allocations
+// the lowest bit of node->data determines if the gap is an allocation (1) or a space (0)
+void* kmalloc(uint32_t s)
 {
+    s--;
     s += 16 - (s % 16); // align to 16 bytes
-    uint64_t segments_needed = s / 16;
+    uint32_t segments_needed = s / 16;
 
-    LinkedList1Node* current_node = kernel_heap.nodes;
+    LinkedList1Node* current_node = kernel_heap.allocs.head;
     bool found_suitable_node = false;
-    for (uint64_t i = 0; i < kernel_heap.max_allocations; i++)
+    for (uint32_t i = 0; i < kernel_heap.allocs.node_storage.count - 1; i++)
     {
-        if ((uint64_t)(current_node->data) >= s)
+        if ((uint32_t)((uintptr_t)current_node->next->data & 0xFFFFFFFE) - ((uintptr_t)current_node->data & 0xFFFFFFFE) >= s)
         {
             found_suitable_node = true;
+            LinkedList1Node* new_node = ll1_push_front(&(kernel_heap.allocs), ((uintptr_t)current_node->next->data & 0xFFFFFFFE) + s);
+            current_node->data = (uint8_t*)(current_node->data) - s;
+            current_node->next = new_node;
 
-            current_node->data = (uint64_t)(current_node->data) - s;
-            if ((uint64_t)(current_node->data) == 0)
-            {
-                ll1_remove(&(kernel_heap.spaces), current_node);
-            }
+            current_node->data = (uintptr_t)current_node->data & 1;
 
             break;
         }
@@ -61,9 +60,30 @@ void* kmalloc(uint64_t s)
             current_node = current_node->next;
         }
     }
+
+    return (uintptr_t)current_node->next->data & 0xFFFFFFFE;
 }
 
 void kfree(void* p)
 {
+    LinkedList1Node* current_node = kernel_heap.allocs.head;
+    bool found_node = false;
+    for (uint64_t i = 0; i < kernel_heap.allocs.node_storage.count - 1; i++)
+    {
+        if (p <= ((uintptr_t)current_node->next->data & 0xFFFFFFFE)) // this is the allocation that needs to be freed
+        {
+            found_node = true;
 
+            ll1_remove(&(kernel_heap.allocs), current_node);
+        }
+
+        if (found_node)
+        {
+            break;
+        }
+        else
+        {
+            current_node = current_node->next;
+        }
+    }
 }

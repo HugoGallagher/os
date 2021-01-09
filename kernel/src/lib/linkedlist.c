@@ -6,42 +6,63 @@
 #include "interface/terminal.h"
 #include "lib/core.h"
 
-void ll1_init(LinkedList1* l, uint32_t size, uint8_t* addr)
+void ll1_init(LinkedList1* l, uint8_t* addr, uint32_t size)
 {
     size += 8 - (size % 8);
 
     l->head = 0;
     l->tail = 0;
 
-    l->node_storage.count = 0;
     bzero(addr, size * sizeof(LinkedList1Node) + size / 8);
 
     uint8_t* p_allocs = addr + sizeof(LinkedList1Node) * size;
 
+    l->node_storage.parent = l;
     l->node_storage.max_count = size;
     l->node_storage.count = 0;
     l->node_storage.nodes = addr;
     l->node_storage.node_allocs = p_allocs;
 }
 
-void ll1_push_front(LinkedList1* l, LinkedList1Node* n)
+LinkedList1Node* ll1_push_front(LinkedList1* l, void* n)
 {
-    n->next = l->head;
-    l->head = ll1_ns_add(&(l->node_storage), n);
-}
-void ll1_push_back(LinkedList1* l, LinkedList1Node* n)
-{
-    LinkedList1Node* cn = l->head;
-    for (int i = 0; i < l->node_storage.count; i++)
-    {
-        cn = cn->next;
+    LinkedList1Node* node = ll1_ns_add(&(l->node_storage), n);
 
-        if (cn->next->next = 0)
+    node->next = l->head;
+    l->head = node;
+
+    return node;
+}
+LinkedList1Node* ll1_push_back(LinkedList1* l, void* n)
+{
+    if (l->node_storage.count == 0)
+        return ll1_push_front(l, n);
+
+    LinkedList1Node* node = ll1_ns_add(&(l->node_storage), n);
+
+    LinkedList1Node* cn = l->head;
+    for (int i = 0; i <= l->node_storage.count; i++)
+    {
+        if (cn->next == l->tail)
+        {
             break;
+        }
+
+        cn = cn->next;
     }
 
-    n->next = 0;
-    cn->next = ll1_ns_add(&(l->node_storage), n);
+    cn->next = node;
+    node->next = l->tail;
+
+    return node;
+}
+LinkedList1Node* ll1_insert(LinkedList1* l, LinkedList1Node* node, void* n)
+{
+    LinkedList1Node* n_node = ll1_ns_add(&(l->node_storage), n);
+    n_node->next = node->next;
+    node->next = n_node;
+
+    return n_node;
 }
 void* ll1_remove_front(LinkedList1* l)
 {
@@ -94,7 +115,7 @@ void* ll1_remove(LinkedList1* l, LinkedList1Node* n)
     ll1_ns_remove(&(l->node_storage), cn->next);
     cn->next = cn_next;
 }
-LinkedList1Node* ll1_ns_add(LinkedList1NodeStorage* ns, LinkedList1Node* n)
+LinkedList1Node* ll1_ns_add(LinkedList1NodeStorage* ns, void* n)
 {
     for (uint32_t i = 0; i < ns->max_count; i++)
     {
@@ -105,9 +126,12 @@ LinkedList1Node* ll1_ns_add(LinkedList1NodeStorage* ns, LinkedList1Node* n)
                 //terminal_writehex(ns->node_allocs[i] & 1 << j);
                 if (!(ns->node_allocs[i] & 1 << j))
                 {
+                    LinkedList1Node* node = &(ns->nodes[(i*64)+j]);
+                    node->data = n;
+
                     ns->count++;
                     ns->node_allocs[i] |= 1 << j;
-                    ns->nodes[(i*64)+j] = *n;
+                    ns->nodes[(i*64)+j] = *node;
 
                     return &(ns->nodes[(i*64)+j]);
                 }
@@ -128,49 +152,63 @@ void ll1_ns_remove(LinkedList1NodeStorage* ns, LinkedList1Node* n)
     ns->node_allocs[index] |= 1 << offset;
 }
 
-void ll2_init(LinkedList2* l, uint32_t size, uint8_t* addr)
+void ll2_init(LinkedList2* l, uint8_t* addr, uint32_t size)
 {
     size += 8 - (size % 8);
 
     l->head = 0;
     l->tail = 0;
 
-    l->node_storage.count = 0;
     bzero(addr, size * sizeof(LinkedList2Node) + size / 8);
 
     uint8_t* p_allocs = addr + sizeof(LinkedList2Node) * size;
 
+    l->node_storage.parent = l;
+    l->node_storage.count = 0;
     l->node_storage.max_count = size;
     l->node_storage.count = 0;
     l->node_storage.nodes = addr;
     l->node_storage.node_allocs = p_allocs;
 }
 
-void ll2_push_front(LinkedList2* l, LinkedList2Node* n)
+LinkedList2Node* ll2_push_front(LinkedList2* l, void* n)
 {
-    LinkedList2Node* an = ll2_ns_add(&(l->node_storage), n);
+    LinkedList2Node* node = ll2_ns_add(&(l->node_storage), n);
 
     if (l->head == 0)
     {
-        l->tail = an;
+        l->tail = node;
     }
 
-    an->next = l->head;
-    an->prev = NULL;
-    l->head = an;
+    node->next = l->head;
+    node->prev = NULL;
+    l->head = node;
+
+    return node;
 }
-void ll2_push_back(LinkedList2* l, LinkedList2Node* n)
+LinkedList2Node* ll2_push_back(LinkedList2* l, void* n)
 {
-    LinkedList2Node* an = ll2_ns_add(&(l->node_storage), n);
+    LinkedList2Node* node = ll2_ns_add(&(l->node_storage), n);
 
     if (l->head == 0)
     {
-        l->head = an;
+        l->head = node;
     }
 
-    n->prev = l->tail;
-    n->next = NULL;
-    l->tail = an;
+    node->prev = l->tail;
+    node->next = NULL;
+    l->tail = node;
+
+    return node;
+}
+LinkedList2Node* ll2_insert(LinkedList2* l, LinkedList2Node* node, void* n)
+{
+    LinkedList2Node* n_node = ll2_ns_add(&(l->node_storage), n);
+    n_node->next = node->next;
+    n_node->prev = node;
+    node->next = n_node;
+
+    return n_node;
 }
 void* ll2_remove_front(LinkedList2* l)
 {
@@ -259,7 +297,7 @@ void* ll2_remove(LinkedList2* l, LinkedList2Node* n)
 
     return n->data;
 }
-LinkedList1Node* ll2_ns_add(LinkedList2NodeStorage* ns, LinkedList2Node* n)
+LinkedList2Node* ll2_ns_add(LinkedList2NodeStorage* ns, void* n)
 {
     for (uint32_t i = 0; i < ns->max_count; i++)
     {
@@ -269,9 +307,12 @@ LinkedList1Node* ll2_ns_add(LinkedList2NodeStorage* ns, LinkedList2Node* n)
             {
                 if (!(ns->node_allocs[i] & 1 << j))
                 {
+                    LinkedList2Node* node = &(ns->nodes[(i*64)+j]);
+                    node->data = n;
+
                     ns->count++;
                     ns->node_allocs[i] |= 1 << j;
-                    ns->nodes[(i*64)+j] = *n;
+                    ns->nodes[(i*64)+j] = *node;
 
                     return &(ns->nodes[(i*64)+j]);
                 }

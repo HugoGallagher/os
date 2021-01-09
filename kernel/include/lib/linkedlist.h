@@ -26,6 +26,8 @@ struct LinkedList1Node
 };
 struct LinkedList1NodeStorage // this idea sort of goes against the purpose of a linked list, but there isn't really a better way to handle this
 {
+    LinkedList1* parent;
+
     uint32_t max_count;
     uint32_t count;
 
@@ -48,6 +50,8 @@ struct LinkedList2Node
 };
 struct LinkedList2NodeStorage
 {
+    LinkedList2* parent;
+
     uint32_t max_count;
     uint32_t count;
 
@@ -62,24 +66,26 @@ struct LinkedList2
     LinkedList2NodeStorage node_storage;
 };
 
-void ll1_init(LinkedList1* l, uint32_t size, uint8_t* addr);
+void ll1_init(LinkedList1* l, uint8_t* addr, uint32_t size);
 
-void ll1_push_front(LinkedList1* l, LinkedList1Node* n);
-void ll1_push_back(LinkedList1* l, LinkedList1Node* n);
+LinkedList1Node* ll1_push_front(LinkedList1* l, void* n);
+LinkedList1Node* ll1_push_back(LinkedList1* l, void* n);
+LinkedList1Node* ll1_insert(LinkedList1* l, LinkedList1Node* node, void* n);
 void* ll1_remove_front(LinkedList1* l);
 void* ll1_remove_back(LinkedList1* l);
 void* ll1_remove(LinkedList1* l, LinkedList1Node* n);
 
-LinkedList1Node* ll1_ns_add(LinkedList1NodeStorage* ns, LinkedList1Node* n);
+LinkedList1Node* ll1_ns_add(LinkedList1NodeStorage* ns, void* n);
 void ll1_ns_remove(LinkedList1NodeStorage* ns, LinkedList1Node* n);
 
-void ll2_init(LinkedList2* l, uint32_t size, uint8_t* addr);
+void ll2_init(LinkedList2* l, uint8_t* addr, uint32_t size);
 
-void ll2_push_front(LinkedList2* l, LinkedList2Node* n);
-void ll2_push_back(LinkedList2* l, LinkedList2Node* n);
+LinkedList2Node* ll2_push_front(LinkedList2* l, void* n);
+LinkedList2Node* ll2_push_back(LinkedList2* l, void* n);
+LinkedList2Node* ll2_insert(LinkedList2* l, LinkedList2Node* node, void* n);
 void* ll2_remove_front(LinkedList2* l);
 void* ll2_remove_back(LinkedList2* l);
 void* ll2_remove(LinkedList2* l, LinkedList2Node* n);
 
-LinkedList1Node* ll2_ns_add(LinkedList2NodeStorage* ns, LinkedList2Node* n);
+LinkedList2Node* ll2_ns_add(LinkedList2NodeStorage* ns, void* n);
 void ll2_ns_remove(LinkedList2NodeStorage* ns, LinkedList2Node* n);
