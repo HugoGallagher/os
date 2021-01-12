@@ -8,9 +8,17 @@
 
 #define HEAP_SIZE (1024*1024)
 
+struct HeapAllocation;
 struct Heap;
 
+typedef struct HeapAllocation HeapAllocation;
 typedef struct Heap Heap;
+
+struct HeapAllocation
+{
+    uint8_t* data;
+    uint16_t size;
+} __attribute__((packed));
 
 struct Heap
 {
@@ -20,6 +28,7 @@ struct Heap
     void* start;
 
     LinkedList1 allocs;
+    HeapAllocation* alloc_data;
 };
 
 extern Heap kernel_heap;

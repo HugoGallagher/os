@@ -9,19 +9,31 @@ Heap kernel_heap;
 
 void heap_init(Heap* heap, void* start, uint32_t size)
 {
-    size--;
-    size += 16 - (size % 16); // align to 16 bytes
+    uint32_t alignment = 64;
 
-    uint32_t alloc_count = size / 16;
-    uint32_t max_allocs = alloc_count / 16;
-    // ^ this saves memory by assuming that the heap will never reach a certain point of fragmentation
+    size--;
+    size += alignment - (size % alignment); // align to 64 bytes
+
+    uint32_t alloc_count = (size / alignment) & 0x0000FFFF;
+    // ^ since each alloc is 64 bytes, 16 bits is all thats needed to store the full 4GB addres space
 
     heap->start = start;
-    heap->max_allocs = max_allocs;
+    heap->max_allocs = alloc_count;
 
-    ll1_init(&(heap->allocs), start, max_allocs);
-    ll1_push_front(&(heap->allocs), ((uint8_t*)start) + size);
-    ll1_push_front(&(heap->allocs), start);
+    heap->alloc_data = (uint8_t*)start;
+    bzero(heap->alloc_data, sizeof(HeapAllocation) * alloc_count);
+
+    for (int i = 0; i < alloc_count; i++)
+    {
+        // this maps allocation data to memory, so now only the size needs to be tracked
+        heap->alloc_data[i].data = (uint8_t*)start + i * alignment;
+    }
+
+    ll1_init(&(heap->allocs), (uint8_t*)start + sizeof(HeapAllocation) * alloc_count, alloc_count);
+    ll1_push_front(&(heap->allocs), &(heap->alloc_data[alloc_count-1]));
+
+    kmalloc(sizeof(LinkedList1Node) * heap->allocs.node_storage.max_count +
+            sizeof(uint64_t) * heap->allocs.node_storage.max_count);
 }
 
 // uses kernel_heap
@@ -31,46 +43,68 @@ void heap_init(Heap* heap, void* start, uint32_t size)
 // the lowest bit of node->data determines if the gap is an allocation (1) or a space (0)
 void* kmalloc(uint32_t s)
 {
+    uint32_t alignment = 64;
+
     s--;
-    s += 16 - (s % 16); // align to 16 bytes
-    uint32_t segments_needed = s / 16;
+    s += alignment - (s % alignment); // align
+
+    uint16_t required_allocs = (s / alignment) & 0x0000FFFF;
 
     LinkedList1Node* current_node = kernel_heap.allocs.head;
-    bool found_suitable_node = false;
-    for (uint32_t i = 0; i < kernel_heap.allocs.node_storage.count - 1; i++)
+    HeapAllocation* current_alloc;
+    HeapAllocation* next_alloc;
+    uint16_t index = 0;
+
+    while (current_node != 0)
     {
-        if ((uint32_t)((uintptr_t)current_node->next->data & 0xFFFFFFFE) - ((uintptr_t)current_node->data & 0xFFFFFFFE) >= s)
+        if (current_node->next == 0)
         {
-            found_suitable_node = true;
-            LinkedList1Node* new_node = ll1_push_front(&(kernel_heap.allocs), ((uintptr_t)current_node->next->data & 0xFFFFFFFE) + s);
-            current_node->data = (uint8_t*)(current_node->data) - s;
-            current_node->next = new_node;
+            current_alloc = &(kernel_heap.alloc_data[0]);
 
-            current_node->data = (uintptr_t)current_node->data & 1;
+            current_alloc->size = required_allocs;
+            ll1_push_front(&(kernel_heap.allocs), current_alloc);
 
             break;
         }
 
-        if (found_suitable_node)
+        current_alloc = (HeapAllocation*)(current_node->data);
+        next_alloc = (HeapAllocation*)(current_node->next->data);
+        index += current_alloc->size;
+
+        uint8_t* space = next_alloc->data - (current_alloc->data + current_alloc->size * alignment);
+        if (space > next_alloc->data)
+            space = 0;
+
+        if (space >= s)
         {
+            LinkedList1Node* new_node = ll1_insert(&(kernel_heap.allocs), current_node, &(kernel_heap.alloc_data[index]));
+            HeapAllocation* new_alloc = (HeapAllocation*)(new_node->data);
+            new_alloc->size = required_allocs;
+            current_alloc = new_alloc;
+
             break;
         }
-        else
-        {
-            current_node = current_node->next;
-        }
+
+        current_node = current_node->next;
     }
 
-    return (uintptr_t)current_node->next->data & 0xFFFFFFFE;
+    return current_alloc->data;
 }
 
 void kfree(void* p)
 {
+    uint32_t alignment = 64;
+    if (*(uint32_t*)&p % alignment == 0)
+        return;
+
     LinkedList1Node* current_node = kernel_heap.allocs.head;
+    HeapAllocation* current_alloc;
     bool found_node = false;
     for (uint64_t i = 0; i < kernel_heap.allocs.node_storage.count - 1; i++)
     {
-        if (p <= ((uintptr_t)current_node->next->data & 0xFFFFFFFE)) // this is the allocation that needs to be freed
+        current_alloc = (HeapAllocation*)(current_node->data);
+
+        if (current_alloc->data == p)
         {
             found_node = true;
 

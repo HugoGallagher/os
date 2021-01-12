@@ -18,24 +18,20 @@ void kernel_main(void)
     terminal_initialize();
 
     heap_init(&kernel_heap, kernel_end, 1024*1024);
-    //kmalloc(16);
+    //heap_init(&kernel_heap, kernel_end, 1024);
 
-    void* gdt_data = kmalloc(32);
+    void* p_gdt = kmalloc(256);
+    void* p_idt = kmalloc(2048);
 
-    terminal_writehex(gdt_data);
-    //terminal_writehex(kernel_end);
-
-    void* test = kmalloc(16);
-    kfree(test);
-
-    gdt_header gdt_h;
-    gdt_init(&gdt_h, gdt_data);
+    GDTHeader gdt_h;
+    gdt_init(&gdt_h, p_gdt);
     gdt_load(gdt_h);
     gdt_enable_protected_mode();
 
-    idt_header idt_h;
+    IDTHeader idt_h;
     idt_h.size = 2047;
-    idt_h.descriptors = kmalloc(2048);
+    idt_h.descriptors =  p_idt; //kmalloc(2048);
+    //terminal_writehex(idt_h.descriptors);
 
     idt_fill_256(&idt_h);
     idt_load(&idt_h);

@@ -23,7 +23,7 @@ struct LinkedList1Node
 {
     void* data;
     LinkedList1Node* next;
-};
+} __attribute__((packed));
 struct LinkedList1NodeStorage // this idea sort of goes against the purpose of a linked list, but there isn't really a better way to handle this
 {
     LinkedList1* parent;
@@ -47,7 +47,7 @@ struct LinkedList2Node
     void* data;
     LinkedList2Node* next;
     LinkedList2Node* prev;
-};
+} __attribute__((packed));
 struct LinkedList2NodeStorage
 {
     LinkedList2* parent;

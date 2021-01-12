@@ -3,25 +3,25 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-struct idt_header;
-struct idt_descriptor;
+struct IDTHeader;
+struct IDTDescriptor;
 
-struct cpu_state;
-struct stack_state;
+struct CPUState;
+struct StackState;
 
-typedef struct idt_header idt_header;
-typedef struct idt_descriptor idt_descriptor;
+typedef struct IDTHeader IDTHeader;
+typedef struct IDTDescriptor IDTDescriptor;
 
-typedef struct cpu_state cpu_state;
-typedef struct stack_state stack_state;
+typedef struct CPUState CPUState;
+typedef struct StackState StackState;
 
-struct idt_header
+struct IDTHeader
 {
     uint16_t size;
-    idt_descriptor* descriptors; // 256 long
+    IDTDescriptor* descriptors; // 256 long
 } __attribute__((packed));
 
-struct idt_descriptor
+struct IDTDescriptor
 {
     uint16_t offset_low;
     uint16_t segment_selector;
@@ -30,13 +30,13 @@ struct idt_descriptor
     uint16_t offset_high;
 } __attribute__((packed));
 
-extern void idt_load(idt_header* ih);
+extern void idt_load(IDTHeader* ih);
 
-void idt_fill_256(idt_header* ih);
+void idt_fill_256(IDTHeader* ih);
 
-idt_descriptor* idt_create_descriptor(idt_header* ih, uint8_t interrupt_code, uint32_t offset, bool in_memory, uint8_t dpl, bool gate_size, uint16_t segment_selector);
+IDTDescriptor* idt_create_descriptor(IDTHeader* ih, uint8_t interrupt_code, uint32_t offset, bool in_memory, uint8_t dpl, bool gate_size, uint16_t segment_selector);
 
-struct cpu_state
+struct CPUState
 {
     // might also need segment registers
     uint32_t eax;
@@ -49,7 +49,7 @@ struct cpu_state
     uint32_t ebp;
 } __attribute__((packed));
 
-struct stack_state
+struct StackState
 {
     uint32_t error_code;
     uint32_t eip;

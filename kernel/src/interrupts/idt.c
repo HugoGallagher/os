@@ -267,9 +267,9 @@ void (*interrupt_handler_addresses[256])() =
 	interrupt_handler_255
 };
 
-idt_descriptor* idt_create_descriptor(idt_header* ih, uint8_t interrupt_code, uint32_t offset, bool in_memory, uint8_t dpl, bool gate_size, uint16_t segment_selector)
+IDTDescriptor* idt_create_descriptor(IDTHeader* ih, uint8_t interrupt_code, uint32_t offset, bool in_memory, uint8_t dpl, bool gate_size, uint16_t segment_selector)
 {
-    idt_descriptor* cd = &(ih->descriptors[interrupt_code]); // current descriptor
+    IDTDescriptor* cd = &(ih->descriptors[interrupt_code]); // current descriptor
 
     uint8_t capped_dpl = dpl;
 
@@ -290,7 +290,7 @@ idt_descriptor* idt_create_descriptor(idt_header* ih, uint8_t interrupt_code, ui
     cd->segment_selector = segment_selector;
 }
 
-void idt_fill_256(idt_header* ih)
+void idt_fill_256(IDTHeader* ih)
 {
     for (uint8_t i = 0; i <= 254; i++)
     {

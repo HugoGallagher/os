@@ -123,7 +123,6 @@ LinkedList1Node* ll1_ns_add(LinkedList1NodeStorage* ns, void* n)
         {
             for (uint32_t j = 0; j < 64; j++)
             {
-                //terminal_writehex(ns->node_allocs[i] & 1 << j);
                 if (!(ns->node_allocs[i] & 1 << j))
                 {
                     LinkedList1Node* node = &(ns->nodes[(i*64)+j]);

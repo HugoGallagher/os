@@ -2,22 +2,22 @@
 
 #include "interface/terminal.h"
 
-void gdt_init(gdt_header* gh, uint8_t* a)
+void gdt_init(GDTHeader* gh, uint8_t* a)
 {
     gh->addr = a;
     gh->size = 0;
 
-    gdt_descriptor null_d;
+    GDTDescriptor null_d;
     null_d.base = 0;
     null_d.limit = 0;
     null_d.type = 0;
 
-    gdt_descriptor code_d;
+    GDTDescriptor code_d;
     code_d.base = 0;
     code_d.limit = 0xFFFFFFFF;
     code_d.type = 0x9A;
 
-    gdt_descriptor data_d;
+    GDTDescriptor data_d;
     data_d.base = 0;
     data_d.limit = 0xFFFFFFFF;
     data_d.type = 0x92;
@@ -27,7 +27,7 @@ void gdt_init(gdt_header* gh, uint8_t* a)
     gdt_add_entry(gh, data_d);
 }
 
-void gdt_add_entry(gdt_header* gh, gdt_descriptor d)
+void gdt_add_entry(GDTHeader* gh, GDTDescriptor d)
 {
     uint8_t* target = gh->addr + gh->size;
     gh->size += 8;
