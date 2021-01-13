@@ -37,10 +37,9 @@ void heap_init(Heap* heap, void* start, uint32_t size)
 }
 
 // uses kernel_heap
-// finds a 16-byte aligned space in heap memory large enough to store the variable
+// finds a 64-byte aligned space in heap memory large enough to store the variable
 // if there isnt a space large enough it will just return 0
 // heap allocations are stored in a linked list, which tracks the starts of allocations
-// the lowest bit of node->data determines if the gap is an allocation (1) or a space (0)
 void* kmalloc(uint32_t s)
 {
     uint32_t alignment = 64;
@@ -55,6 +54,7 @@ void* kmalloc(uint32_t s)
     HeapAllocation* next_alloc;
     uint16_t index = 0;
 
+    bool found_node = false;
     while (current_node != 0)
     {
         if (current_node->next == 0)
@@ -63,6 +63,7 @@ void* kmalloc(uint32_t s)
 
             current_alloc->size = required_allocs;
             ll1_push_front(&(kernel_heap.allocs), current_alloc);
+            found_node = true;
 
             break;
         }
@@ -81,6 +82,7 @@ void* kmalloc(uint32_t s)
             HeapAllocation* new_alloc = (HeapAllocation*)(new_node->data);
             new_alloc->size = required_allocs;
             current_alloc = new_alloc;
+            found_node = true;
 
             break;
         }
@@ -88,7 +90,10 @@ void* kmalloc(uint32_t s)
         current_node = current_node->next;
     }
 
-    return current_alloc->data;
+    if (found_node)
+        return current_alloc->data;
+    else
+        return 0;
 }
 
 void kfree(void* p)
