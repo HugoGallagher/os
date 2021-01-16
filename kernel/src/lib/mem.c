@@ -14,8 +14,7 @@ void heap_init(Heap* heap, void* start, uint32_t size)
     size--;
     size += alignment - (size % alignment); // align to 64 bytes
 
-    uint32_t alloc_count = (size / alignment) & 0x0000FFFF;
-    // ^ since each alloc is 64 bytes, 16 bits is all thats needed to store the full 4GB addres space
+    uint32_t alloc_count = size / alignment;
 
     heap->start = start;
     heap->max_allocs = alloc_count;
@@ -47,7 +46,7 @@ void* kmalloc(uint32_t s)
     s--;
     s += alignment - (s % alignment); // align
 
-    uint16_t required_allocs = (s / alignment) & 0x0000FFFF;
+    uint32_t required_allocs = s / alignment;
 
     LinkedList1Node* current_node = kernel_heap.allocs.head;
     HeapAllocation* current_alloc;

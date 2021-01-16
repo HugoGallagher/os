@@ -1,35 +1,64 @@
 #pragma once
 
-#include "lib/linkedlist.h"
-#include "lib/mem.h"
+#include <stdint.h>
+#include <stdbool.h>
 
-#define AVAILABLE_MEMORY (1024*1024*1024) // only works for systems with 1GB memory
-#define PAGE_SIZE (4*1024)
-#define PAGE_COUNT 262144
-
-struct Page;
-struct PageAllocater;
-
-typedef struct Page Page;
-typedef struct PageAllocater PageAllocater;
-
-struct Page
+enum pde_flags
 {
-    uint32_t flags;
-    void* addr;
+    pde_present = 0,
+    pde_read,
+    pde_user,
+    pde_writethrough,
+    pde_cachedisabled,
+    pde_accessed,
+    pde_size,
+    pde_ignored,
+    pde_reserved1,
+    pde_reserved2,
+};
+enum pte_flags
+{
+    pte_present = 0,
+    pte_read,
+    pte_user,
+    pte_writethrough,
+    pte_cachedisabled,
+    pte_accessed,
+    pte_dirty,
+    pte_global,
+    pte_reserved1,
+    pte_reserved2,
 };
 
-struct PageAllocater
-{
-    Page* all_p;
-    LinkedList2Node* all_n;
+struct PageDirEntry;
+struct PageTableEntry;
+struct PageTable;
 
-    LinkedList2 free;
+typedef struct PageDirEntry PageDirEntry;
+typedef struct PageTableEntry PageTableEntry;
+typedef struct PageTable PageTable;
+
+struct PageDirEntry
+{
+    uint32_t data;
+};
+struct PageTableEntry
+{
+    uint32_t data;
+};
+struct PageTable
+{
+    PageTableEntry entries[1024];
 };
 
-void page_set_flag(Page* p, uint32_t pf, bool s);
-uint32_t page_get_flag(Page* p, uint32_t pf);
+extern void pg_enable(PageDirEntry* pd);
 
-void pageallocater_init(PageAllocater* pt, char* start);
-void* pageallocater_alloc(PageAllocater* pt);
-void pageallocater_free(PageAllocater* pt, void* addr);
+void pde_set_flag(PageDirEntry* pde, enum pde_flags f, bool v);
+bool pde_get_flag(PageDirEntry* pde, enum pde_flags f);
+void pde_set_addr(PageDirEntry* pde, void* addr);
+void* pde_get_addr(PageDirEntry* pde);
+
+void pte_set_flag(PageTableEntry* pte, enum pte_flags f, bool v);
+bool pte_get_flag(PageTableEntry* pte, enum pte_flags f);
+void pte_set_addr(PageTableEntry* pte, void* addr);
+void* pte_get_addr(PageTableEntry* pte);

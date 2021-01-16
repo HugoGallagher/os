@@ -17,8 +17,9 @@ void kernel_main(void)
 
     terminal_initialize();
 
-    heap_init(&kernel_heap, kernel_end, 1024*1024);
-    //heap_init(&kernel_heap, kernel_end, 1024);
+    terminal_writehex(1);
+
+    heap_init(&kernel_heap, kernel_end, 1*1024*1024);
 
     void* p_gdt = kmalloc(256);
     void* p_idt = kmalloc(2048);
@@ -26,7 +27,7 @@ void kernel_main(void)
     GDTHeader gdt_h;
     gdt_init(&gdt_h, p_gdt);
     gdt_load(gdt_h);
-    gdt_enable_protected_mode();
+    gdt_reload_cs();
 
     IDTHeader idt_h;
     idt_h.size = 2047;

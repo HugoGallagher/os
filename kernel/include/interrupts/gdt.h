@@ -22,7 +22,7 @@ struct GDTDescriptor
 };
 
 extern void gdt_load(GDTHeader gh);
-extern void gdt_enable_protected_mode();
+extern void gdt_reload_cs();
 
 void gdt_init(GDTHeader* gh, uint8_t* a);
 void gdt_add_entry(GDTHeader* gh, GDTDescriptor d);

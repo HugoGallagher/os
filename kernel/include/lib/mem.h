@@ -6,8 +6,6 @@
 
 #include "lib/linkedlist.h"
 
-#define HEAP_SIZE (1024*1024)
-
 struct HeapAllocation;
 struct Heap;
 
@@ -17,7 +15,7 @@ typedef struct Heap Heap;
 struct HeapAllocation
 {
     uint8_t* data;
-    uint16_t size;
+    uint32_t size;
 } __attribute__((packed));
 
 struct Heap

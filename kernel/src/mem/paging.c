@@ -1,77 +1,37 @@
-#include <stddef.h>
-#include <stdint.h>
-#include <stdbool.h>
-
-#include "lib/core.h"
-#include "lib/mem.h"
 #include "mem/paging.h"
 
-enum page_flags
+void pde_set_flag(PageDirEntry* pde, enum pde_flags f, bool v)
 {
-    pf_allocated,
-    pf_kernel,
-};
-
-void page_set_flag(Page* p, uint32_t pf, bool s)
-{
-    //p->flags = (p->flags & ~(1 << pf)) | s << pf;
+    pde->data = (pde->data & ~(1 << f)) | 1 << v;
 }
-uint32_t page_get_flag(Page* p, uint32_t pf)
+bool pde_get_flag(PageDirEntry* pde, enum pde_flags f)
 {
-    //return (p->flags >> pf) & ~(1 << 0);
+    return pde->data & 1 << f;
 }
 
-void pageallocater_init(PageAllocater* pt, char* start)
+void pde_set_addr(PageDirEntry* pde, void* addr)
 {
-    pt->all_p = start + 1;
-    pt->all_n = start + HEAP_SIZE + sizeof(Page) * PAGE_COUNT;
-
-    bzero(pt->all_p, sizeof(Page) * PAGE_COUNT);
-    bzero(pt->all_n, sizeof(LinkedList2Node) * PAGE_COUNT);
-
-    uint32_t kernel_page_count = (uint32_t)((uint32_t)kernel_end / PAGE_SIZE);
-
-    for (uint32_t i = 0; i < (uint32_t)PAGE_COUNT; i++)
-    {
-        (pt->all_n + i)->data = pt->all_p + i;
-        (pt->all_p + i)->addr = i * PAGE_SIZE;
-
-        if (i < kernel_page_count)
-        {
-            page_set_flag(pt->all_p + i, pf_allocated, true);
-            page_set_flag(pt->all_p + i, pf_kernel, true);
-        }
-        else
-        {
-            ll2_push_front(&(pt->free), pt->all_n + i);
-            page_set_flag(pt->all_p + i, pf_allocated, false);
-        }
-    }
+    pde->data |= (*(uint32_t*)&addr & 0xFFFFF000);
+}
+void* pde_get_addr(PageDirEntry* pde)
+{
+    return pde->data & 0xFFFFF000;
 }
 
-void* pageallocater_alloc(PageAllocater* pt)
+void pte_set_flag(PageTableEntry* pte, enum pte_flags f, bool v)
 {
-    if (pt->free.head == pt->free.tail) { return 0; }
-
-    LinkedList2Node* node = ll2_remove_front(&(pt->free));
-    Page* page = node->data;
-    page->addr = (void*)((page - pt->all_p) * PAGE_SIZE);
-
-    bzero(page->addr, PAGE_SIZE);
-    page_set_flag(page, pf_allocated, true);
-    page_set_flag(page, pf_kernel, true);
-
-    return page->addr;
+    pte->data = (pte->data & ~(1 << f)) | 1 << v;
+}
+bool pte_get_flag(PageTableEntry* pte, enum pte_flags f)
+{
+    return pte->data & 1 << f;
 }
 
-void pageallocater_free(PageAllocater* pt, void* addr)
+void pte_set_addr(PageTableEntry* pte, void* addr)
 {
-    if (((uint64_t)addr % PAGE_SIZE) != 0) { return; }
-
-    Page* page = &(pt->all_p[(uint64_t)addr/PAGE_SIZE]);
-
-    page_set_flag(page, pf_allocated, false);
-    page_set_flag(page, pf_kernel, false);
-
-    ll2_push_front(&pt->free, &pt->all_n[(uint64_t)addr/PAGE_SIZE]);
+    pte->data |= (*(uint32_t*)&addr & 0xFFFFF000);
+}
+void* pte_get_addr(PageTableEntry* pte)
+{
+    return pte->data & 0xFFFFF000;
 }

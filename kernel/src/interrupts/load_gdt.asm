@@ -1,5 +1,5 @@
 global gdt_load
-global gdt_enable_protected_mode
+global gdt_reload_cs
 
 ; from osdev.org
 
@@ -16,7 +16,7 @@ gdt_load:
     sti
     ret
 
-gdt_enable_protected_mode:
+gdt_reload_cs:
     mov eax, cr0
     or eax, 1
     mov cr0, eax

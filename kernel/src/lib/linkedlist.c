@@ -146,7 +146,7 @@ void ll1_ns_remove(LinkedList1NodeStorage* ns, LinkedList1Node* n)
     uint32_t index = *(uint32_t*)&identity_pointer / sizeof(LinkedList1Node);
 
     uint32_t offset = index % 64;
-    index -= index & 64;
+    index = (index - offset) / 64;
 
     ns->node_allocs[index] |= 1 << offset;
 }
