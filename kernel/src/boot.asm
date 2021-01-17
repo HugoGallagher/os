@@ -1,23 +1,91 @@
-FLAGS    equ 0x11
+FLAGS    equ 0x3
 MAGIC    equ 0x1BADB002
 CHECKSUM equ -(MAGIC + FLAGS)
 
-section .multiboot:
+section .multiboot.data
 align 4
     dd MAGIC
     dd FLAGS
     dd CHECKSUM
 
-KERNEL_STACK_SIZE equ 16384
-
 section .bss
 align 16
 stack_bottom:
-    resb KERNEL_STACK_SIZE
+    resb 16384
+stack_top:
 
-section .text:
+pd_boot:
+    resb 4096
+pt_boot1:
+    resb 4096
+
+section .multiboot.text
 extern kernel_main
+extern _kernel_start
+extern _kernel_end
 global _start
 _start:
-    mov esp, stack_bottom + KERNEL_STACK_SIZE
+    ; the kernel has only 1 page directory, so it only has 3mb total
+    mov edi, pt_boot1 - 0xC0000000
+    mov esi, 0
+    mov ecx, 1023 ; the last page is used for the VGA buffer
+    mov edx, 0
+
+    jmp l1
+
+l1:
+    cmp ecx, 0
+    jg l2
+    cmp ecx, 0
+    jle l3
+
+l2:
+    add esi, 4096
+    add edi, 4
+
+    mov edx, esi
+    or edx, 0x003
+    mov [edi], edx
+
+    loop l1
+
+l3:
+    mov eax, pt_boot1 - 0xC0000000 + 1023*4
+    mov ebx, 0xB8003 ; VGA buffer
+    mov [eax], ebx
+
+    mov eax, pd_boot - 0xC0000000
+    mov ebx, pt_boot1 - 0xC0000000 + 0x003
+    mov [eax], ebx
+    mov [eax+768*4], ebx
+
+    mov eax, pd_boot - 0xC0000000
+    mov cr3, eax
+
+    mov eax, cr0
+    or eax, 0x80000000
+    mov cr0, eax
+
+    lea eax, [l4]
+    jmp near eax
+
+section .text
+
+l4:
+    mov eax, [pd_boot+0]
+    mov eax, 0
+
+    mov ecx, cr3
+    mov cr3, ecx
+
+	; mov eax, pt_boot1
+	; cmp eax, 0xC0000000
+	; jge l5
+
+    mov esp, stack_top
+
     call kernel_main
+
+l5:
+	cli
+	hlt

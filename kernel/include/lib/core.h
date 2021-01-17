@@ -3,7 +3,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-extern uint8_t __end;
+extern uint8_t _kernel_end;
 static void* kernel_end;
 
 void bzero(void *s, size_t n);

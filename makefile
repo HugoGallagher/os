@@ -14,7 +14,7 @@ HSRC = $(shell find $(INC_DIR) -name *.h)
 AOBJ = $(subst $(SRC_DIR), $(BUILD_DIR), $(ASRC:.S=.o))
 NAOBJ = $(subst $(SRC_DIR), $(BUILD_DIR), $(NASRC:.asm=.o))
 COBJ = $(subst $(SRC_DIR), $(BUILD_DIR), $(CSRC:.c=.o))
-OBJS = $(COBJ) $(AOBJ) $(NAOBJ)
+OBJS = $(AOBJ) $(NAOBJ) $(COBJ)
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c $(NAOBJ)
 	mkdir -p $(@D)

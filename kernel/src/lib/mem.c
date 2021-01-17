@@ -2,6 +2,7 @@
 #include <stdint.h>
 
 #include "lib/mem.h"
+#include "lib/core.h"
 
 #include "interface/terminal.h"
 
@@ -18,8 +19,8 @@ void heap_init(Heap* heap, void* start, uint32_t size)
 
     heap->start = start;
     heap->max_allocs = alloc_count;
-
     heap->alloc_data = (uint8_t*)start;
+    
     bzero(heap->alloc_data, sizeof(HeapAllocation) * alloc_count);
 
     for (int i = 0; i < alloc_count; i++)
