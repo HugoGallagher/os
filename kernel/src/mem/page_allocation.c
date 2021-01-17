@@ -10,6 +10,8 @@
 
 void pageallocater_init(PageAllocater* pt)
 {
+    // pd 
+
     /*
     ll2_init(pi->free, kmalloc(PAGE_COUNT), PAGE_COUNT);
 

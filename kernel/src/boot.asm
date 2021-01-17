@@ -18,6 +18,8 @@ pd_boot:
     resb 4096
 pt_boot1:
     resb 4096
+pt_boot2:
+    resb 4096
 
 section .multiboot.text
 extern kernel_main
@@ -25,10 +27,10 @@ extern _kernel_start
 extern _kernel_end
 global _start
 _start:
-    ; the kernel has only 1 page directory, so it only has 3mb total
+    ; the kernel has only 2 page directories, so it only has 7mb total
     mov edi, pt_boot1 - 0xC0000000
     mov esi, 0
-    mov ecx, 1023 ; the last page is used for the VGA buffer
+    mov ecx, 1022 ; last 2 pages are for VGA buffer and pd_boot address
     mov edx, 0
 
     jmp l1
@@ -50,14 +52,20 @@ l2:
     loop l1
 
 l3:
-    mov eax, pt_boot1 - 0xC0000000 + 1023*4
+    mov eax, pt_boot1 - 0xC0000000 + 1022*4
     mov ebx, 0xB8003 ; VGA buffer
+    mov [eax], ebx
+	mov eax, pt_boot1 - 0xC0000000 + 1023*4
+    mov ebx, pd_boot ; pd_boot address
     mov [eax], ebx
 
     mov eax, pd_boot - 0xC0000000
     mov ebx, pt_boot1 - 0xC0000000 + 0x003
     mov [eax], ebx
     mov [eax+768*4], ebx
+;    mov ebx, pt_boot2 - 0xC0000000 + 0x003
+;    mov [eax+1*4], ebx
+;    mov [eax+769*4], ebx
 
     mov eax, pd_boot - 0xC0000000
     mov cr3, eax
@@ -72,8 +80,10 @@ l3:
 section .text
 
 l4:
-    mov eax, [pd_boot+0]
+    mov eax, [pd_boot+0*4]
     mov eax, 0
+;	mov eax, [pd_boot+1*4]
+;    mov eax, 0
 
     mov ecx, cr3
     mov cr3, ecx

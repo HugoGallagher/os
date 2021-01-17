@@ -66,7 +66,8 @@ struct LinkedList2
     LinkedList2NodeStorage node_storage;
 };
 
-void ll1_init(LinkedList1* l, uint8_t* addr, uint32_t size);
+void ll1_init(LinkedList1* l, uint32_t size);
+void ll1_init_to_addr(LinkedList1* l, uint8_t* addr, uint32_t size);
 
 LinkedList1Node* ll1_push_front(LinkedList1* l, void* n);
 LinkedList1Node* ll1_push_back(LinkedList1* l, void* n);
@@ -78,7 +79,8 @@ void* ll1_remove(LinkedList1* l, LinkedList1Node* n);
 LinkedList1Node* ll1_ns_add(LinkedList1NodeStorage* ns, void* n);
 void ll1_ns_remove(LinkedList1NodeStorage* ns, LinkedList1Node* n);
 
-void ll2_init(LinkedList2* l, uint8_t* addr, uint32_t size);
+void ll2_init(LinkedList2* l, uint32_t size);
+void ll2_init_to_addr(LinkedList2* l, uint8_t* addr, uint32_t size);
 
 LinkedList2Node* ll2_push_front(LinkedList2* l, void* n);
 LinkedList2Node* ll2_push_back(LinkedList2* l, void* n);

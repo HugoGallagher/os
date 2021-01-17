@@ -5,8 +5,28 @@
 
 #include "interface/terminal.h"
 #include "lib/core.h"
+#include "lib/mem.h"
 
-void ll1_init(LinkedList1* l, uint8_t* addr, uint32_t size)
+void ll1_init(LinkedList1* l, uint32_t size)
+{
+    size += 8 - (size % 8);
+
+    l->head = 0;
+    l->tail = 0;
+
+    uint8_t* addr = kmalloc(size * sizeof(LinkedList1Node) + size / 8);
+
+    bzero(addr, size * sizeof(LinkedList1Node) + size / 8);
+
+    uint8_t* p_allocs = addr + sizeof(LinkedList1Node) * size;
+
+    l->node_storage.parent = l;
+    l->node_storage.max_count = size;
+    l->node_storage.count = 0;
+    l->node_storage.nodes = addr;
+    l->node_storage.node_allocs = p_allocs;
+}
+void ll1_init_to_addr(LinkedList1* l, uint8_t* addr, uint32_t size)
 {
     size += 8 - (size % 8);
 
@@ -151,7 +171,27 @@ void ll1_ns_remove(LinkedList1NodeStorage* ns, LinkedList1Node* n)
     ns->node_allocs[index] |= 1 << offset;
 }
 
-void ll2_init(LinkedList2* l, uint8_t* addr, uint32_t size)
+void ll2_init(LinkedList2* l, uint32_t size)
+{
+    size += 8 - (size % 8);
+
+    l->head = 0;
+    l->tail = 0;
+
+    uint8_t* addr = kmalloc(size * sizeof(LinkedList2Node) + size / 8);
+
+    bzero(addr, size * sizeof(LinkedList2Node) + size / 8);
+
+    uint8_t* p_allocs = addr + sizeof(LinkedList2Node) * size;
+
+    l->node_storage.parent = l;
+    l->node_storage.count = 0;
+    l->node_storage.max_count = size;
+    l->node_storage.count = 0;
+    l->node_storage.nodes = addr;
+    l->node_storage.node_allocs = p_allocs;
+}
+void ll2_init_to_addr(LinkedList2* l, uint8_t* addr, uint32_t size)
 {
     size += 8 - (size % 8);
 

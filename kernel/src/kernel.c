@@ -13,12 +13,15 @@
 
 void kernel_main(void)
 {
+    //kernel_loop();
+
     kernel_end = &_kernel_end;
 
     terminal_initialize();
+
     terminal_writehex(kernel_end);
 
-    heap_init(&kernel_heap, kernel_end, 2*1024*1024);
+    heap_init(&kernel_heap, kernel_end, 1*1024*1024);
 
     void* p_gdt = kmalloc(256);
     void* p_idt = kmalloc(2048);
@@ -38,7 +41,7 @@ void kernel_main(void)
 
     pic_remap();
 
-    terminal_writestring("Works");
+    terminal_writestring("Works!");
 
     kernel_loop();
 

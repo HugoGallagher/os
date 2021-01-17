@@ -20,7 +20,7 @@ void heap_init(Heap* heap, void* start, uint32_t size)
     heap->start = start;
     heap->max_allocs = alloc_count;
     heap->alloc_data = (uint8_t*)start;
-    
+
     bzero(heap->alloc_data, sizeof(HeapAllocation) * alloc_count);
 
     for (int i = 0; i < alloc_count; i++)
@@ -29,7 +29,7 @@ void heap_init(Heap* heap, void* start, uint32_t size)
         heap->alloc_data[i].data = (uint8_t*)start + i * alignment;
     }
 
-    ll1_init(&(heap->allocs), (uint8_t*)start + sizeof(HeapAllocation) * alloc_count, alloc_count);
+    ll1_init_to_addr(&(heap->allocs), (uint8_t*)start + sizeof(HeapAllocation) * alloc_count, alloc_count);
     ll1_push_front(&(heap->allocs), &(heap->alloc_data[alloc_count-1]));
 
     kmalloc(sizeof(LinkedList1Node) * heap->allocs.node_storage.max_count +
