@@ -8,35 +8,54 @@ void gdt_init(GDTHeader* gh, uint8_t* a)
     gh->size = 0;
 
     GDTDescriptor null_d;
-    null_d.base = 0;
-    null_d.limit = 0;
-    null_d.type = 0;
+    gdt_create_descriptor(&null_d, 0, 0, 0, 0, 0, 0, 0, 0);
 
     GDTDescriptor k_code_d;
-    k_code_d.base = 0;
-    k_code_d.limit = 0xFFFFFFFF;
-    k_code_d.type = 0x9A;
+    gdt_create_descriptor(&k_code_d, 0, 0xFFFFFFFF, 1, 0, 1, 1, 0, 1);
 
     GDTDescriptor k_data_d;
-    k_data_d.base = 0;
-    k_data_d.limit = 0xFFFFFFFF;
-    k_data_d.type = 0x92;
+    gdt_create_descriptor(&k_data_d, 0, 0xFFFFFFFF, 1, 0, 1, 0, 0, 1);
 
-    /*
     GDTDescriptor u_code_d;
-    u_code_d.base = 0;
-    u_code_d.limit = 0xFFFFFFFF;
-    u_code_d.type = 0x9A;
+    gdt_create_descriptor(&u_code_d, 0, 0xFFFFFFFF, 1, 3, 1, 1, 1, 1);
 
     GDTDescriptor u_data_d;
-    u_data_d.base = 0;
-    u_data_d.limit = 0xFFFFFFFF;
-    u_data_d.type = 0x92;
-    */
+    gdt_create_descriptor(&u_data_d, 0, 0xFFFFFFFF, 1, 3, 1, 0, 0, 1);
 
     gdt_add_entry(gh, null_d);
     gdt_add_entry(gh, k_code_d);
     gdt_add_entry(gh, k_data_d);
+    gdt_add_entry(gh, u_code_d);
+    gdt_add_entry(gh, u_data_d);
+}
+void gdt_create_descriptor(GDTDescriptor* gd, uint32_t base, uint32_t limit, uint8_t present, uint8_t privilege, uint8_t type, uint8_t executable, uint8_t dir_conf, uint8_t read_write)
+{
+    if (limit > 65536)
+    {
+        limit = limit >> 12;
+        gd->limit_high_flags = 0xC0;
+    }
+    else
+    {
+        gd->limit_high_flags = 0x40;
+    }
+
+    gd->limit_low = limit & 0xFFFF;
+    gd->limit_high_flags |= limit >> 16;
+
+    gd->base_low = base & 0xFFFF;
+    gd->base_mid = (base >> 16) & 0xFF;
+    gd->base_high = base >> 24;
+
+    gd->access = 0;
+    gd->access |= present << 7;
+    gd->access |= privilege << 5;
+    gd->access |= type << 4;
+    gd->access |= executable << 3;
+    gd->access |= dir_conf << 2;
+    gd->access |= read_write << 1;
+
+    //terminal_writehex(gd->access);
 }
 
 void gdt_add_entry(GDTHeader* gh, GDTDescriptor d)
@@ -44,28 +63,6 @@ void gdt_add_entry(GDTHeader* gh, GDTDescriptor d)
     uint8_t* target = gh->addr + gh->size;
     gh->size += 8;
 
-    // from osdev.org
-
-    // Check the limit to make sure that it can be encoded
-    if ((d.limit > 65536) && ((d.limit & 0xFFF) != 0xFFF)) {
-        //kerror("You can't do that!");
-    }
-    if (d.limit > 65536) {
-        // Adjust granularity if required
-        d.limit = d.limit >> 12;
-        target[6] = 0xC0;
-    } else {
-        target[6] = 0x40;
-    }
-    // Encode the limit
-    target[0] = d.limit & 0xFF;
-    target[1] = (d.limit >> 8) & 0xFF;
-    target[6] |= (d.limit >> 16) & 0xF;
-    // Encode the base
-    target[2] = d.base & 0xFF;
-    target[3] = (d.base >> 8) & 0xFF;
-    target[4] = (d.base >> 16) & 0xFF;
-    target[7] = (d.base >> 24) & 0xFF;
-    // And... Type
-    target[5] = d.type;
+    GDTDescriptor* p_d = target;
+    *p_d = d;
 }
