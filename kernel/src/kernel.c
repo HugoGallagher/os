@@ -19,11 +19,9 @@ void kernel_main(void)
 
     terminal_initialize();
 
-    terminal_writehex(kernel_end);
-
     heap_init(&kernel_heap, kernel_end, 1*1024*1024);
 
-    void* p_gdt = kmalloc(256);
+    void* p_gdt = kmalloc(64);
     void* p_idt = kmalloc(2048);
 
     GDTHeader gdt_h;
@@ -41,7 +39,7 @@ void kernel_main(void)
 
     pic_remap();
 
-    terminal_writestring("Works!");
+    terminal_writestring("Works!\n");
 
     kernel_loop();
 

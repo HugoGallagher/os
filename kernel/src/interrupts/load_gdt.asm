@@ -31,8 +31,3 @@ reload_cs:
     mov gs, ax
     mov ss, ax
     ret
-
-global halt
-halt:
-    cli
-    hlt

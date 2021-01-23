@@ -12,19 +12,31 @@ void gdt_init(GDTHeader* gh, uint8_t* a)
     null_d.limit = 0;
     null_d.type = 0;
 
-    GDTDescriptor code_d;
-    code_d.base = 0;
-    code_d.limit = 0xFFFFFFFF;
-    code_d.type = 0x9A;
+    GDTDescriptor k_code_d;
+    k_code_d.base = 0;
+    k_code_d.limit = 0xFFFFFFFF;
+    k_code_d.type = 0x9A;
 
-    GDTDescriptor data_d;
-    data_d.base = 0;
-    data_d.limit = 0xFFFFFFFF;
-    data_d.type = 0x92;
+    GDTDescriptor k_data_d;
+    k_data_d.base = 0;
+    k_data_d.limit = 0xFFFFFFFF;
+    k_data_d.type = 0x92;
+
+    /*
+    GDTDescriptor u_code_d;
+    u_code_d.base = 0;
+    u_code_d.limit = 0xFFFFFFFF;
+    u_code_d.type = 0x9A;
+
+    GDTDescriptor u_data_d;
+    u_data_d.base = 0;
+    u_data_d.limit = 0xFFFFFFFF;
+    u_data_d.type = 0x92;
+    */
 
     gdt_add_entry(gh, null_d);
-    gdt_add_entry(gh, code_d);
-    gdt_add_entry(gh, data_d);
+    gdt_add_entry(gh, k_code_d);
+    gdt_add_entry(gh, k_data_d);
 }
 
 void gdt_add_entry(GDTHeader* gh, GDTDescriptor d)

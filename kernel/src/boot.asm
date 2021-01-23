@@ -18,8 +18,6 @@ pd_boot:
     resb 4096
 pt_boot1:
     resb 4096
-pt_boot2:
-    resb 4096
 
 section .multiboot.text
 extern kernel_main
