@@ -19,6 +19,8 @@ void kernel_main(void)
 
     terminal_initialize();
 
+    terminal_writehex(kernel_end);
+
     heap_init(&kernel_heap, kernel_end, 1*1024*1024);
 
     void* p_gdt = kmalloc(64);

@@ -54,8 +54,6 @@ void gdt_create_descriptor(GDTDescriptor* gd, uint32_t base, uint32_t limit, uin
     gd->access |= executable << 3;
     gd->access |= dir_conf << 2;
     gd->access |= read_write << 1;
-
-    //terminal_writehex(gd->access);
 }
 
 void gdt_add_entry(GDTHeader* gh, GDTDescriptor d)
