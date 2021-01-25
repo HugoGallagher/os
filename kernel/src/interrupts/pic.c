@@ -16,8 +16,8 @@ void pic_remap()
     outb(0x21, 0x0);
     outb(0xA1, 0x0);
 
-    outb(PIC1_D, 0xFD);
-    outb(PIC2_D, 0xFF);
+    outb(PIC1_D, 0b11111100);
+    outb(PIC2_D, 0b11111111);
 }
 
 void pic_handle(uint8_t i)
@@ -53,17 +53,27 @@ void pic_eoi(uint8_t i)
         outb(PIC2_C, PIC_EOI);
 }
 
+void pic_init_pit(uint16_t divider)
+{
+    outb(0x43, 0x36);
+    outb(0x40, divider & 0xFF);
+    outb(0x40, divider >> 8);
+}
+
 void pic_handle_irq0()
 {
+    //terminal_writestring("Ticked!\n");
+
     pic_ack(0);
 }
 void pic_handle_irq1()
 {
     uint8_t sc = inb(0x60);
 
-    if (sc > 0x80) { sc -= 0x80; }
+    if (sc & 0x80) {} // this should track keys like shift
+    else { cli_send_char(sc); }
 
-    cli_send_char(sc);
+    //cli_send_char(sc);
 
     pic_ack(1);
 }

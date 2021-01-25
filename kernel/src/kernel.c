@@ -19,7 +19,7 @@ void kernel_main(void)
 
     terminal_initialize();
 
-    terminal_writehex(kernel_end);
+    //terminal_writehex(kernel_end);
 
     heap_init(&kernel_heap, kernel_end, 1*1024*1024);
 
@@ -40,6 +40,7 @@ void kernel_main(void)
     idt_load(&idt_h);
 
     pic_remap();
+    pic_init_pit(0);
 
     terminal_writestring("Works!\n");
 
