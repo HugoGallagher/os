@@ -51,14 +51,14 @@ l2:
     add edi, 4
 
     mov edx, esi
-    or edx, 0x003
+    or edx, 0x103
     mov [edi], edx
 
     add esi, 0x400000
     add edi, 0x400000
 
     mov edx, esi
-    or edx, 0x003
+    or edx, 0x103
     mov [edi], edx
 
     sub esi, 0x400000
@@ -84,6 +84,10 @@ l3:
 
     mov eax, pd_boot - 0xC0000000
     mov cr3, eax
+
+    mov eax, cr4
+    or eax, 0x00000080
+    mov cr4, eax
 
     mov eax, cr0
     or eax, 0x80000000

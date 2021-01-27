@@ -68,8 +68,6 @@ void pageallocater_init(PageAllocater* pa, multiboot_info_t* mbi)
         ll1_push_front(&(pa->free), &(pa->page_allocs[i]));
     }
 
-    terminal_writehex(total_pages);
-
     // now allocate the reserved memory as pages
     LinkedList1Node* current_node = pa->free.head;
 
