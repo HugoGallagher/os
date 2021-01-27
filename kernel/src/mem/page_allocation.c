@@ -7,94 +7,119 @@
 #include "lib/core.h"
 #include "lib/mem.h"
 #include "mem/paging.h"
+#include "interface/terminal.h"
 
-void pageallocater_init(PageAllocater* pt)
+void pageallocater_init(PageAllocater* pa, multiboot_info_t* mbi)
 {
-    // pd 
-
     /*
-    ll2_init(pi->free, kmalloc(PAGE_COUNT), PAGE_COUNT);
 
-    uint8_t* pd_address = kmalloc(sizeof(PageDirEntry) * 1024);
-    uint8_t* pt_address = kmalloc(sizeof(PageTableEntry) * 1024 * 1024);
+    go through every physical page aligned address and check if in use
+    in use = free in mmap and above reserved kernel memory (currently 8mb)
+    allocations are stored in a linkedlist-bitmap hybrid to save memory
+    (each address has just over 1 byte of metadata, as well as pt entry)
 
-    // align to 4kb
-    uint8_t* pd_address_aligned = pd_address - 1;
-    pd_address_aligned += PAGE_SIZE - (pd_address_aligned % PAGE_SIZE);
-    uint8_t* pt_address_aligned = pt_address - 1;
-    pt_address_aligned += PAGE_SIZE - (pt_address_aligned % PAGE_SIZE);
+    */
 
-    pt->page_directory = pd_address_aligned;
-    pt->page_tables = pt_address_aligned;
+    uint32_t available_memory = 0;
+    multiboot_memory_map_t* mbim = mbi->mmap_addr;
 
-    bzero(pt->page_directory, sizeof(PageDirEntry) * 1024);
-    bzero(pt->page_tables, sizeof(PageTableEntry) * 1024 * 1024);
-
-    uint32_t kernel_page_count = (uint32_t)((uint32_t)kernel_end / PAGE_SIZE);
-
-    PageDirEntry* pde;
-    PageTable* table;
-
-    for (uint32_t i = 0; i < (uint32_t)PAGE_COUNT; i++)
+    // find the last available section
+    uint32_t last_available = 0;
+    for (uint32_t i = 0; i < mbi->mmap_length; i++)
     {
-        //(pt->all_n + i)->data = pt->all_p + i;
-        //(pt->all_p + i)->addr = i * PAGE_SIZE;
+        if (mbim[i].type == MULTIBOOT_MEMORY_AVAILABLE)
+            last_available = i;
+    }
 
-        uint32_t i_pd = i - 1;
-        i_pd += 1024 - (i_pd % 1024);
+    // find the total memory (including reserved, since these can be filtered out)
+    for (uint32_t i = 0; i < last_available; i++)
+    {
+        if (mbim[i].len_high == 0 && mbim[i].len_low != 0)
+            available_memory += mbim[i].len_low;
+    }
 
-        PageDescriptor indexes;
-        indexes.index_pd = i_pd / 1024;
-        indexes.index_pt = i - i_pd;
+    // align to page boundary
+    available_memory--;
+    available_memory += PAGE_SIZE - (available_memory % PAGE_SIZE);
 
-        if (i % PAGE_SIZE == 0)
+    // calculate total needed pages and align (downwards) to 32 to allow for bitmaps
+    uint32_t total_pages = available_memory / PAGE_SIZE;
+    total_pages -= total_pages % 32;
+    uint32_t ll_allocs = total_pages / 32;
+
+    ll1_init(&(pa->free), ll_allocs);
+
+    pa->page_allocs = kmalloc(sizeof(PageAllocationElement) * ll_allocs);
+
+    // pages are identity mapped to start with, but as they
+    // are allocated and freed they will be mapped randomly
+    for (uint32_t i = 0; i <= ll_allocs; i++)
+    {
+        PageAllocationElement element;
+        element.allocated = 0;
+
+        for (uint8_t j = 0; j < 32; j++)
         {
-            pde = &(pt->page_directory[indexes.index_pd]);
-            pde_set_addr(pde, pt->page_tables[indexes.index_pd]);
-            pde_set_flag(pde, pde_present, true);
-            // user/supervisor bit should also be set
+            // get the physical address of the page
+            element.addresses[j] = (i * 32 + j) * PAGE_SIZE;
         }
 
-        table = pde->data & 0xFFFFF000;
-        pte_set_addr(&(table->entries[indexes.index_pt]), i * PAGE_SIZE);
-        pte_set_flag(&(table->entries[indexes.index_pt]), pte_present, true);
-
-        //PageTable* p_t = pt->page_directory[indexes.index_pd].data & 0xFFFFF000;
-        //p_t->entries[indexes.index_pt].data = (i * PAGE_SIZE) & 0xFFFFF000;
-
-        ll2_push_front(&(pt->free), indexes);
+        pa->page_allocs[i] = element;
+        ll1_push_front(&(pa->free), &(pa->page_allocs[i]));
     }
-    */
+
+    terminal_writehex(total_pages);
+
+    // now allocate the reserved memory as pages
+    LinkedList1Node* current_node = pa->free.head;
+
+    uint32_t page_index_h = 0; // the linked list element
+    uint32_t page_index_l = 0; // individual entries in addresses
+    while (current_node != 0)
+    {
+        for (uint32_t i = 0; i < 32; i++)
+        {
+            page_index_l = i;
+
+            PageAllocationElement* element = current_node->data;
+
+            // set the bit here
+            element->allocated |= 1 << i;
+
+            uint8_t* phys_addr = (page_index_h * 32 + page_index_l) * PAGE_SIZE;
+
+            // check if the address is above the kernel
+            if (phys_addr >= 8*1024*1024)
+            {
+                bool in_available = false;
+                // check if the address is in an available area
+                for (uint32_t j = 0; j < mbi->mmap_length; j++)
+                {
+                    if (phys_addr > mbim[j].addr_low && phys_addr < mbim[j].addr_low + mbim[j].len_low)
+                    {
+                        in_available = true;
+                    }
+                }
+                if (in_available)
+                {
+                    // if the address is available, unset the bit with XOR
+                    element->allocated ^= 1 << i;
+                }
+            }
+        }
+
+        page_index_h++;
+        page_index_l = 0;
+        current_node = current_node->next;
+    }
 }
 
-void* pageallocater_alloc(PageAllocater* pt)
+void* pageallocater_alloc(PageAllocater* pa)
 {
-    /*
-    if (pt->free.head == pt->free.tail) { return 0; }
 
-    LinkedList2Node* node = ll2_remove_front(&(pt->free));
-    PageDescriptor indexes = *(PageDescriptor*)&(node->data);
-
-    //page->addr = (void*)((page - pt->all_p) * PAGE_SIZE);
-
-    bzero(page->addr, PAGE_SIZE);
-    //page_set_flag(page, pf_allocated, true);
-    //page_set_flag(page, pf_kernel, true);
-
-    return page->addr;
-    */
 }
 
-void pageallocater_free(PageAllocater* pt, void* addr)
+void pageallocater_free(PageAllocater* pa, void* addr)
 {
-    /*
-    if (((uint64_t)addr % PAGE_SIZE) != 0) { return; }
 
-    Page* page = &(pt->all_p[(uint64_t)addr/PAGE_SIZE]);
-
-    //page_set_flag(page, pf_allocated, false);
-    //page_set_flag(page, pf_kernel, false);
-
-    ll2_push_front(&pt->free, &pt->all_n[(uint64_t)addr/PAGE_SIZE]);
-    */
 }

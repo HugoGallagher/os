@@ -22,11 +22,16 @@ pt_boot2:
     resb 4096
 
 section .multiboot.text
-extern kernel_main
+extern kmain
 extern _kernel_start
 extern _kernel_end
+global pd_boot
+global pt_boot1
+global pt_boot2
 global _start
 _start:
+    push ebx
+
     ; the kernel has only 2 page directories, so it only has 7mb total
     mov edi, pt_boot1 - 0xC0000000
     mov esi, 0
@@ -84,12 +89,12 @@ l3:
     or eax, 0x80000000
     mov cr0, eax
 
-    lea eax, [l4]
+    lea eax, [enter_kernel]
     jmp near eax
 
 section .text
 
-l4:
+enter_kernel:
     mov eax, [pd_boot+0*4]
     mov eax, 0
 	mov eax, [pd_boot+1*4]
@@ -102,9 +107,13 @@ l4:
 	; cmp eax, 0xC0000000
 	; jge l5
 
+    pop ebx
+
     mov esp, stack_top
 
-    call kernel_main
+    push ebx
+
+    call kmain
 
 l5:
 	cli

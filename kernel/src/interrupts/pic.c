@@ -13,10 +13,10 @@ void pic_remap()
     outb(0xA1, 0x02);
     outb(0x21, 0x01);
     outb(0xA1, 0x01);
-    outb(0x21, 0x0);
-    outb(0xA1, 0x0);
+    outb(0x21, 0x00);
+    outb(0xA1, 0x00);
 
-    outb(PIC1_D, 0b11111100);
+    outb(PIC1_D, 0b11111101);
     outb(PIC2_D, 0b11111111);
 }
 
@@ -55,7 +55,7 @@ void pic_eoi(uint8_t i)
 
 void pic_init_pit(uint16_t divider)
 {
-    outb(0x43, 0x36);
+    outb(0x43, 0b00110110);
     outb(0x40, divider & 0xFF);
     outb(0x40, divider >> 8);
 }

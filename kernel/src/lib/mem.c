@@ -33,7 +33,7 @@ void heap_init(Heap* heap, void* start, uint32_t size)
     ll1_push_front(&(heap->allocs), &(heap->alloc_data[alloc_count-1]));
 
     kmalloc(sizeof(LinkedList1Node) * heap->allocs.node_storage.max_count +
-            sizeof(uint64_t) * heap->allocs.node_storage.max_count);
+            sizeof(uint32_t) * heap->allocs.node_storage.max_count);
 }
 
 // uses kernel_heap
@@ -57,6 +57,8 @@ void* kmalloc(uint32_t s)
     bool found_node = false;
     while (current_node != 0)
     {
+        //terminal_writehex(current_node);
+
         if (current_node->next == 0)
         {
             current_alloc = &(kernel_heap.alloc_data[0]);
@@ -89,6 +91,12 @@ void* kmalloc(uint32_t s)
 
         current_node = current_node->next;
     }
+
+    //terminal_writehex(current_alloc->data);
+
+    //terminal_writehex(*(uint8_t*)&found_node);
+
+    //asm("hlt");
 
     if (found_node)
         return current_alloc->data;

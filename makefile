@@ -1,7 +1,7 @@
 AS = i686-elf-as
 CC = i686-elf-gcc
 
-CFLAGS = -ffreestanding -O0 -Wall -Wextra -Ikernel/include/
+CFLAGS = -ffreestanding -O0 -g -Wall -Wextra -Ikernel/include/
 
 SRC_DIR = ./kernel/src
 INC_DIR = ./kernel/include
@@ -29,11 +29,18 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.asm $(COBJ)
 	nasm -felf32 $< -o $@
 
 kernel: clean $(OBJS) $(HSRC)
-	$(CC) -T $(SRC_DIR)/linker.ld -o $(BUILD_DIR)/os.bin -ffreestanding -O2 -nostdlib $(OBJS) -lgcc
-	cp $(BUILD_DIR)/os.bin isodir/boot/os.bin
+	$(CC) -T $(SRC_DIR)/linker.ld -o $(BUILD_DIR)/os.elf -ffreestanding -O2 -nostdlib $(OBJS) -lgcc
+	cp $(BUILD_DIR)/os.elf isodir/boot/os.elf
 	cp grub.cfg isodir/boot/grub/grub.cfg
 	grub-mkrescue -o os.iso isodir
+
+run: kernel
 	qemu-system-i386 -m 1024 -cdrom os.iso
+
+debug: kernel
+	objcopy --only-keep-debug isodir/boot/os.elf isodir/boot/os.sym
+	objcopy --strip-debug isodir/boot/os.elf
+	qemu-system-i386 -s -S -m 1024 -cdrom os.iso
 
 .PHONY: clean
 

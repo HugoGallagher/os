@@ -84,7 +84,7 @@ void terminal_writehex(void* data)
 
 void terminal_check()
 {
-    if (terminal_row > VGA_HEIGHT)
+	if (terminal_row > VGA_HEIGHT)
 	//if (terminal_row > 0)
     {
 //		for (int i = 0; i < VGA_HEIGHT; i++)
@@ -95,7 +95,7 @@ void terminal_check()
 //			}
 //		}
 
-        terminal_row = 0;
+		terminal_row = 0;
 		terminal_column = 0;
-    }
+	}
 }

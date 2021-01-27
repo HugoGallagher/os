@@ -7,6 +7,13 @@
 
 #include "interface/terminal.h"
 
+void idt_handle()
+{
+    terminal_writestring("asdf");
+    asm("cli");
+    asm("hlt");
+}
+
 void (*interrupt_handler_addresses[256])() =
 {
     interrupt_handler_0,

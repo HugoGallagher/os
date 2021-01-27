@@ -1,12 +1,20 @@
 %macro no_error_interrupt_handler 1
 global interrupt_handler_%1
+extern idt_handle
 interrupt_handler_%1:
+    pusha
+    call idt_handle
+    popa
     iret
 %endmacro
 
 %macro error_interrupt_handler 1
 global interrupt_handler_%1
+extern idt_handle
 interrupt_handler_%1:
+    pusha
+    call idt_handle
+    popa
     iret
 %endmacro
 

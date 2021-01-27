@@ -9,16 +9,19 @@
 
 void ll1_init(LinkedList1* l, uint32_t size)
 {
+    size--;
     size += 8 - (size % 8);
 
     l->head = 0;
     l->tail = 0;
 
-    uint8_t* addr = kmalloc(size * sizeof(LinkedList1Node) + size / 8);
+    uint8_t* addr = kmalloc(size * sizeof(LinkedList1Node) + size * 4);
 
-    bzero(addr, size * sizeof(LinkedList1Node) + size / 8);
+    bzero(addr, size * sizeof(LinkedList1Node) + size * 4);
 
     uint8_t* p_allocs = addr + sizeof(LinkedList1Node) * size;
+
+    //terminal_writehex(size);
 
     l->node_storage.parent = l;
     l->node_storage.max_count = size;
@@ -28,12 +31,13 @@ void ll1_init(LinkedList1* l, uint32_t size)
 }
 void ll1_init_to_addr(LinkedList1* l, uint8_t* addr, uint32_t size)
 {
+    size--;
     size += 8 - (size % 8);
 
     l->head = 0;
     l->tail = 0;
 
-    bzero(addr, size * sizeof(LinkedList1Node) + size / 8);
+    bzero(addr, size * sizeof(LinkedList1Node) + size * 4);
 
     uint8_t* p_allocs = addr + sizeof(LinkedList1Node) * size;
 
@@ -137,22 +141,41 @@ void* ll1_remove(LinkedList1* l, LinkedList1Node* n)
 }
 LinkedList1Node* ll1_ns_add(LinkedList1NodeStorage* ns, void* n)
 {
+    //terminal_writehex(ns->max_count);
     for (uint32_t i = 0; i < ns->max_count; i++)
     {
-        if (ns->node_allocs[i] != 0xFFFFFFFF)
+        //terminal_writehex(ns->node_allocs[i]);
+        if (ns->node_allocs[i] == 0x7FFFFFFF) // this case seems to be required
         {
-            for (uint32_t j = 0; j < 64; j++)
+            LinkedList1Node* node = &(ns->nodes[(i*32)+31]);
+            node->data = n;
+            ns->count++;
+            ns->node_allocs[i] = 0xFFFFFFFF;
+            ns->nodes[(i*32)+31] = *node;
+            return &(ns->nodes[(i*32)+31]);
+//            terminal_writehex(0xABCD);
+//            terminal_writehex(i);
+//            terminal_writehex((i*32)+31);
+//            terminal_writehex(node);
+//            terminal_writehex(&(ns->nodes[(i*32)+32]));
+        }
+        else if (ns->node_allocs[i] != 0xFFFFFFFF)
+        {
+            for (uint32_t j = 0; j < 32; j++)
             {
+                //terminal_writehex(ns->node_allocs[i] & 1 << j);
+
                 if (!(ns->node_allocs[i] & 1 << j))
                 {
-                    LinkedList1Node* node = &(ns->nodes[(i*64)+j]);
+                    //terminal_writehex(j);
+
+                    LinkedList1Node* node = &(ns->nodes[(i*32)+j]);
                     node->data = n;
 
                     ns->count++;
                     ns->node_allocs[i] |= 1 << j;
-                    ns->nodes[(i*64)+j] = *node;
-
-                    return &(ns->nodes[(i*64)+j]);
+                    ns->nodes[(i*32)+j] = *node;
+                    return &(ns->nodes[(i*32)+j]);
                 }
             }
         }
@@ -342,18 +365,18 @@ LinkedList2Node* ll2_ns_add(LinkedList2NodeStorage* ns, void* n)
     {
         if (ns->node_allocs[i] != 0xFFFFFFFF)
         {
-            for (uint32_t j = 0; j < 64; j++)
+            for (uint32_t j = 0; j < 32; j++)
             {
                 if (!(ns->node_allocs[i] & 1 << j))
                 {
-                    LinkedList2Node* node = &(ns->nodes[(i*64)+j]);
+                    LinkedList2Node* node = &(ns->nodes[(i*32)+j]);
                     node->data = n;
 
                     ns->count++;
                     ns->node_allocs[i] |= 1 << j;
-                    ns->nodes[(i*64)+j] = *node;
+                    ns->nodes[(i*32)+j] = *node;
 
-                    return &(ns->nodes[(i*64)+j]);
+                    return &(ns->nodes[(i*32)+j]);
                 }
             }
         }

@@ -32,7 +32,7 @@ struct LinkedList1NodeStorage // this idea sort of goes against the purpose of a
     uint32_t count;
 
     LinkedList1Node* nodes;
-    uint64_t* node_allocs;
+    uint32_t* node_allocs;
 };
 struct LinkedList1
 {
@@ -56,7 +56,7 @@ struct LinkedList2NodeStorage
     uint32_t count;
 
     LinkedList2Node* nodes;
-    uint64_t* node_allocs;
+    uint32_t* node_allocs;
 };
 struct LinkedList2
 {
