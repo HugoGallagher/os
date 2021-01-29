@@ -1,3 +1,5 @@
+#pragma once
+
 // generated with python
 
 extern void interrupt_handler_0();

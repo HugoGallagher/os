@@ -91,6 +91,7 @@ void pageallocater_init(PageAllocater* pa, multiboot_info_t* mbi)
             {
                 bool in_available = false;
                 // check if the address is in an available area
+                // this is quite slow, lots of room for optimisation
                 for (uint32_t j = 0; j < mbi->mmap_length; j++)
                 {
                     if (phys_addr > mbim[j].addr_low && phys_addr < mbim[j].addr_low + mbim[j].len_low)

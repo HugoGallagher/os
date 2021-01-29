@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define KERNEL_PAGE_TABLES 2
+
 enum pde_flags
 {
     pde_present = 0,
@@ -30,15 +32,17 @@ enum pte_flags
     pte_reserved2,
 };
 
-struct PageDirEntry;
+struct PageDirectoryEntry;
 struct PageTableEntry;
+struct PageDirectory;
 struct PageTable;
 
-typedef struct PageDirEntry PageDirEntry;
+typedef struct PageDirectoryEntry PageDirectoryEntry;
 typedef struct PageTableEntry PageTableEntry;
+typedef struct PageDirectory PageDirectory;
 typedef struct PageTable PageTable;
 
-struct PageDirEntry
+struct PageDirectoryEntry
 {
     uint32_t data;
 };
@@ -46,17 +50,21 @@ struct PageTableEntry
 {
     uint32_t data;
 };
+struct PageDirectory
+{
+    PageDirectoryEntry entries[1024];
+};
 struct PageTable
 {
     PageTableEntry entries[1024];
 };
 
-extern void pg_enable(PageDirEntry* pd);
+extern void pg_enable(PageDirectoryEntry* pd);
 
-void pde_set_flag(PageDirEntry* pde, enum pde_flags f, bool v);
-bool pde_get_flag(PageDirEntry* pde, enum pde_flags f);
-void pde_set_addr(PageDirEntry* pde, void* addr);
-void* pde_get_addr(PageDirEntry* pde);
+void pde_set_flag(PageDirectoryEntry* pde, enum pde_flags f, bool v);
+bool pde_get_flag(PageDirectoryEntry* pde, enum pde_flags f);
+void pde_set_addr(PageDirectoryEntry* pde, void* addr);
+void* pde_get_addr(PageDirectoryEntry* pde);
 
 void pte_set_flag(PageTableEntry* pte, enum pte_flags f, bool v);
 bool pte_get_flag(PageTableEntry* pte, enum pte_flags f);

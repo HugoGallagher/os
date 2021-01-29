@@ -1,19 +1,19 @@
 #include "mem/paging.h"
 
-void pde_set_flag(PageDirEntry* pde, enum pde_flags f, bool v)
+void pde_set_flag(PageDirectoryEntry* pde, enum pde_flags f, bool v)
 {
     pde->data = (pde->data & ~(1 << f)) | 1 << v;
 }
-bool pde_get_flag(PageDirEntry* pde, enum pde_flags f)
+bool pde_get_flag(PageDirectoryEntry* pde, enum pde_flags f)
 {
     return pde->data & 1 << f;
 }
 
-void pde_set_addr(PageDirEntry* pde, void* addr)
+void pde_set_addr(PageDirectoryEntry* pde, void* addr)
 {
     pde->data |= (*(uint32_t*)&addr & 0xFFFFF000);
 }
-void* pde_get_addr(PageDirEntry* pde)
+void* pde_get_addr(PageDirectoryEntry* pde)
 {
     return pde->data & 0xFFFFF000;
 }

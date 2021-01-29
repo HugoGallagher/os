@@ -10,9 +10,9 @@ align 4
 
 section .bss
 align 16
-stack_bottom:
+k_stack_bottom:
     resb 16384
-stack_top:
+k_stack_top:
 
 pd_boot:
     resb 4096
@@ -113,7 +113,7 @@ enter_kernel:
 
     pop ebx
 
-    mov esp, stack_top
+    mov esp, k_stack_top
 
     push ebx
 
