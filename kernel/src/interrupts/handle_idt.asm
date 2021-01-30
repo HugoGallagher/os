@@ -2,9 +2,11 @@
 global interrupt_handler_%1
 extern idt_handle
 interrupt_handler_%1:
-    pusha
+;    pusha
+    push dword 0
+    push %1
     call idt_handle
-    popa
+;    popa
     iret
 %endmacro
 
@@ -12,9 +14,10 @@ interrupt_handler_%1:
 global interrupt_handler_%1
 extern idt_handle
 interrupt_handler_%1:
-    pusha
+;    pusha
+    push %1
     call idt_handle
-    popa
+;    popa
     iret
 %endmacro
 

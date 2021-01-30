@@ -1,3 +1,4 @@
 isodir/*
 kernel/build/*
 *.iso
+bochsrc.txt

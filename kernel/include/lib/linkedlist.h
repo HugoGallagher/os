@@ -71,13 +71,20 @@ void ll1_init_to_addr(LinkedList1* l, uint8_t* addr, uint32_t size);
 
 LinkedList1Node* ll1_push_front(LinkedList1* l, void* n);
 LinkedList1Node* ll1_push_back(LinkedList1* l, void* n);
+uint32_t ll1_push_front_return_index(LinkedList1* l, void* n);
+uint32_t ll1_push_back_return_index(LinkedList1* l, void* n);
 LinkedList1Node* ll1_insert(LinkedList1* l, LinkedList1Node* node, void* n);
 void* ll1_remove_front(LinkedList1* l);
 void* ll1_remove_back(LinkedList1* l);
+uint32_t ll1_remove_front_return_index(LinkedList1* l);
+uint32_t ll1_remove_back_return_index(LinkedList1* l);
 void* ll1_remove(LinkedList1* l, LinkedList1Node* n);
 
 LinkedList1Node* ll1_ns_add(LinkedList1NodeStorage* ns, void* n);
 void ll1_ns_remove(LinkedList1NodeStorage* ns, LinkedList1Node* n);
+
+uint32_t ll1_ns_add_return_index(LinkedList1NodeStorage* ns, void* n);
+uint32_t ll1_ns_remove_return_index(LinkedList1NodeStorage* ns, LinkedList1Node* n);
 
 void ll2_init(LinkedList2* l, uint32_t size);
 void ll2_init_to_addr(LinkedList2* l, uint8_t* addr, uint32_t size);

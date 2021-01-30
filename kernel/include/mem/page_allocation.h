@@ -10,35 +10,35 @@
 #define PAGE_SIZE (4*1024)
 #define PAGE_COUNT (1024*1024)
 
-struct PageDescriptor;
-struct PageAllocationElement;
+struct PABitmap1;
+struct PABitmap2;
+
 struct PageAllocater;
 
-typedef struct PageDescriptor PageDescriptor;
-typedef struct PageAllocationElement PageAllocationElement;
+typedef struct PABitmap1 PABitmap1;
+typedef struct PABitmap2 PABitmap2;
+
 typedef struct PageAllocater PageAllocater;
 
-struct PageDescriptor
+struct PABitmap1
 {
-    uint16_t index_pd; // index of relevant page table
-    uint16_t index_pt; // index of relevent page table entry
-} __attribute__((padded));
-
-struct PageAllocationElement
+    uint32_t b1[32];
+    uint32_t a;
+};
+struct PABitmap2
 {
-    uint8_t* addresses[32];
-    uint32_t allocated;
-} __attribute__((packed));
-struct PageAllocater
-{
-    //PageDirEntry* page_directory;
-    //PageTable* page_tables;
-
-    PageAllocationElement* page_allocs;
-
-    LinkedList1 free;
+    PABitmap1 b2[32];
+    uint32_t a;
 };
 
-void pageallocater_init(PageAllocater* pa, multiboot_info_t* mbi);
-void* pageallocater_alloc(PageAllocater* pa);
-void pageallocater_free(PageAllocater* pa, void* addr);
+struct PageAllocater
+{
+    PABitmap2* b3;
+    uint32_t a;
+    uint32_t bitmaps;
+};
+
+void pa_init(PageAllocater* pa, multiboot_info_t* mbi);
+void* pa_alloc(PageAllocater* pa);
+void pa_free(PageAllocater* pa, uint32_t addr);
+uint8_t pa_check_addr(uint32_t addr, multiboot_info_t* mbi);

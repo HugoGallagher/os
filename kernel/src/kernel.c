@@ -24,9 +24,14 @@ void kmain(multiboot_info_t* mbi)
 
     terminal_initialize();
 
-    heap_init(&kernel_heap, kernel_end, 6*1024*1024);
+    terminal_writestring("Initialising heap\n");
+    heap_init(&kernel_heap, kernel_end, 8*1024*1024);
     void* p_gdt = kmalloc(64);
-    void* p_idt = kmalloc(4096);
+    void* p_idt = kmalloc(2048);
+
+    terminal_writestring("Initialising page frames\n");
+    PageAllocater page_allocs;
+    pa_init(&page_allocs, mbi);
 
     terminal_writestring("Initialising GDT\n");
     TaskManager* task_manager = kmalloc(sizeof(TaskManager));
@@ -41,41 +46,12 @@ void kmain(multiboot_info_t* mbi)
     IDTHeader idt_h;
     idt_h.size = 2047;
     idt_h.descriptors = p_idt;
+    pic_remap();
+    pic_init_pit(0);
     idt_fill_256(&idt_h);
     idt_load(&idt_h);
 
-    terminal_writestring("Initialising PIC\n");
-    pic_remap();
-    pic_init_pit(0);
-
-    terminal_writestring("Initialising page frames\n");
-    PageAllocater page_allocs;
-    pageallocater_init(&page_allocs, mbi);
-
     terminal_writestring("Works!\n");
-
-    /*
-    uint32_t size = 0x20;
-    LinkedList1 list;
-    ll1_init(&list, size);
-
-    for (uint32_t i = 0; i < size; i++)
-    {
-        ll1_push_front(&list, i);
-    }
-
-    LinkedList1Node* node = list.head;
-    for (uint32_t i = 0; i < size; i++)
-    {
-        if (node->data != (size - (i+1)))
-        {
-            terminal_writehex(node->data);
-            terminal_writehex(i);
-        }
-        //terminal_writehex(size - (i+1));
-        node = node->next;
-    }
-    */
 
     kernel_loop();
 

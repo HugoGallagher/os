@@ -12,8 +12,8 @@ typedef struct GDTDescriptor GDTDescriptor;
 
 struct GDTHeader
 {
-    uint8_t* addr;
     uint16_t size;
+    uint8_t* addr;
 } __attribute__((packed));
 struct GDTDescriptor
 {

@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define KERNEL_PAGE_TABLES 2
+#define KERNEL_PAGE_TABLES 3
 
 enum pde_flags
 {

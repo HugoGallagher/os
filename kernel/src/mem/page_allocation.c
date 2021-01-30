@@ -9,14 +9,13 @@
 #include "mem/paging.h"
 #include "interface/terminal.h"
 
-void pageallocater_init(PageAllocater* pa, multiboot_info_t* mbi)
+void pa_init(PageAllocater* pa, multiboot_info_t* mbi)
 {
     /*
 
-    go through every physical page aligned address and check if in use
-    in use = free in mmap and above reserved kernel memory (currently 8mb)
-    allocations are stored in a linkedlist-bitmap hybrid to save memory
-    (each address has just over 1 byte of metadata, as well as pt entry)
+    go through every physical page aligned address and check if in use in
+    use = free in mmap and above reserved kernel memory allocations are
+    stored in a three-tiered cascading bitmap
 
     */
 
@@ -44,81 +43,147 @@ void pageallocater_init(PageAllocater* pa, multiboot_info_t* mbi)
 
     // calculate total needed pages and align (downwards) to 32 to allow for bitmaps
     uint32_t total_pages = available_memory / PAGE_SIZE;
-    total_pages -= total_pages % 32;
-    uint32_t ll_allocs = total_pages / 32;
+    uint32_t total_pages_aligned = total_pages - 1;
+    total_pages_aligned += (32*32*32*32) - (total_pages_aligned % (32*32*32*32));
+    uint32_t packed_allocs = total_pages_aligned - total_pages;
+    uint32_t bitmaps_needed = (total_pages_aligned / (32*32*32*32)) * 8;
+    pa->bitmaps = bitmaps_needed;
 
-    ll1_init(&(pa->free), ll_allocs);
-
-    pa->page_allocs = kmalloc(sizeof(PageAllocationElement) * ll_allocs);
-
-    // pages are identity mapped to start with, but as they
-    // are allocated and freed they will be mapped randomly
-    for (uint32_t i = 0; i <= ll_allocs; i++)
+    pa->b3 = kmalloc(sizeof(PABitmap2) * bitmaps_needed);
+    bzero(pa->b3, sizeof(PABitmap2) * bitmaps_needed);
+    for (uint8_t i = 0; i < (32 - bitmaps_needed); i++)
     {
-        PageAllocationElement element;
-        element.allocated = 0;
-
-        for (uint8_t j = 0; j < 32; j++)
-        {
-            // get the physical address of the page
-            element.addresses[j] = (i * 32 + j) * PAGE_SIZE;
-        }
-
-        pa->page_allocs[i] = element;
-        ll1_push_front(&(pa->free), &(pa->page_allocs[i]));
+        pa->a |= 1 << (31 - i);
     }
 
-    // now allocate the reserved memory as pages
-    LinkedList1Node* current_node = pa->free.head;
-
-    uint32_t page_index_h = 0; // the linked list element
-    uint32_t page_index_l = 0; // individual entries in addresses
-    while (current_node != 0)
+    for (uint32_t i = 0; i < bitmaps_needed; i++)
     {
-        for (uint32_t i = 0; i < 32; i++)
+        for (uint32_t j = 0; j < 32; j++)
         {
-            page_index_l = i;
-
-            PageAllocationElement* element = current_node->data;
-
-            // set the bit here
-            element->allocated |= 1 << i;
-
-            uint8_t* phys_addr = (page_index_h * 32 + page_index_l) * PAGE_SIZE;
-
-            // check if the address is above the kernel
-            if (phys_addr >= 8*1024*1024)
+            for (uint32_t k = 0; k < 32; k++)
             {
-                bool in_available = false;
-                // check if the address is in an available area
-                // this is quite slow, lots of room for optimisation
-                for (uint32_t j = 0; j < mbi->mmap_length; j++)
+                for (uint32_t l = 0; l < 32; l++)
                 {
-                    if (phys_addr > mbim[j].addr_low && phys_addr < mbim[j].addr_low + mbim[j].len_low)
+                    void* addr = (l + k * 32 + j * 32*32 + i * 32*32*32) * PAGE_SIZE;
+
+                    if (!pa_check_addr(addr, mbi) || addr < 4*1024*1024 * KERNEL_PAGE_TABLES || addr > available_memory)
                     {
-                        in_available = true;
+                        pa->b3[i].b2[j].b1[k] |= 1 << l;
+                        //terminal_writehex(pa->b3[i].b2[j].b1[k]);
                     }
-                }
-                if (in_available)
-                {
-                    // if the address is available, unset the bit with XOR
-                    element->allocated ^= 1 << i;
                 }
             }
         }
+    }
 
-        page_index_h++;
-        page_index_l = 0;
-        current_node = current_node->next;
+    for (uint32_t i = 0; i < bitmaps_needed; i++)
+    {
+        for (uint32_t j = 0; j < 32; j++)
+        {
+            for (uint32_t k = 0; k < 32; k++)
+            {
+                for (uint32_t l = 0; l < 32; l++)
+                {
+                    void* addr = (l + k * 32 + j * 32*32 + i * 32*32*32) * PAGE_SIZE;
+                    //terminal_writehex(addr);
+
+                    if (!pa_check_addr(addr, mbi) || addr < 4*1024*1024 * KERNEL_PAGE_TABLES || addr > available_memory)
+                    {
+                        if (pa->b3[i].b2[j].b1[k] == 0xFFFFFFFF)
+                        {
+                            pa->b3[i].b2[j].a |= 1 << k;
+
+                            if (pa->b3[i].b2[j].a == 0xFFFFFFFF)
+                            {
+                                pa->b3[i].a |= 1 << j;
+
+                                if (pa->b3[i].a == 0xFFFFFFFF)
+                                {
+                                    pa->a |= 1 << i;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
-void* pageallocater_alloc(PageAllocater* pa)
+void* pa_alloc(PageAllocater* pa)
 {
+    for (uint32_t i = 0; i < pa->bitmaps; i++) { if (!(pa->a & 1 << i))
+    {
+        for (uint32_t j = 0; j < 32; j++) { if (!(pa->b3[i].a & 1 << j))
+        {
+            for (uint32_t k = 0; k < 32; k++) { if (!(pa->b3[i].b2[j].a & 1 << k))
+            {
+                for (uint32_t l = 0; l < 32; l++) { if (!(pa->b3[i].b2[j].b1[k] & 1 << l))
+                {
+                    pa->b3[i].b2[j].b1[k] |= 1 << l;
+                    if (pa->b3[i].b2[j].b1[k] == 0xFFFFFFFF)
+                    {
+                        pa->b3[i].b2[j].a |= 1 << k;
 
+                        if (pa->b3[i].b2[j].a == 0xFFFFFFFF)
+                        {
+                            pa->b3[i].a |= 1 << j;
+
+                            if (pa->b3[i].a == 0xFFFFFFFF)
+                            {
+                                pa->a |= 1 << i;
+                            }
+                        }
+                    }
+
+                    void* addr = (l + k * 32 + j * 32*32 + i * 32*32*32) * PAGE_SIZE;
+
+                    return addr;
+                }}
+            }}
+        }}
+    }}
 }
 
-void pageallocater_free(PageAllocater* pa, void* addr)
+void pa_free(PageAllocater* pa, uint32_t addr)
 {
+    uint32_t a = addr / PAGE_SIZE;
 
+    uint32_t i = (a & 0b11111000000000000000) >> 15;
+    uint32_t j = (a & 0b00000111110000000000) >> 10;
+    uint32_t k = (a & 0b00000000001111100000) >> 5;
+    uint32_t l = (a & 0b00000000000000011111) >> 0;
+
+    pa->b3[i].b2[j].b1[k] &= ~(1 << l);
+
+    if (pa->b3[i].b2[j].b1[k] == 0x00000000)
+    {
+        pa->b3[i].b2[j].a &= ~(1 << k);
+
+        if (pa->b3[i].b2[j].a == 0x00000000)
+        {
+            pa->b3[i].a &= ~(1 << j);
+
+            if (pa->b3[i].a == 0x00000000)
+            {
+                pa->a &= ~(1 << i);
+            }
+        }
+    }
+}
+
+uint8_t pa_check_addr(uint32_t addr, multiboot_info_t* mbi)
+{
+    multiboot_memory_map_t* mbim = mbi->mmap_addr;
+
+    for (uint32_t i = 0; i < mbi->mmap_length; i++)
+    {
+        if ((addr > mbim[i].addr_low && addr < mbim[i].addr_low + mbim[i].len_low) &&
+            (addr + PAGE_SIZE > mbim[i].addr_low && addr + PAGE_SIZE < mbim[i].addr_low + mbim[i].len_low))
+        {
+            return true;
+        }
+    }
+
+    return false;
 }

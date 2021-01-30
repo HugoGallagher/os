@@ -9,7 +9,8 @@ void gdt_init(GDTHeader* gh, uint8_t* a, TaskManager* tm)
     gh->size = 0;
 
     GDTDescriptor null_d;
-    gdt_create_descriptor(&null_d, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    bzero(&null_d, 8);
+    //gdt_create_descriptor(&null_d, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
     GDTDescriptor k_code_d;
     gdt_create_descriptor(&k_code_d, 0, 0xFFFFFFFF, 0, 1, 0, 1, 1, 0, 1);

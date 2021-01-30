@@ -20,6 +20,8 @@ pt_boot1:
     resb 4096
 pt_boot2:
     resb 4096
+pt_boot3:
+    resb 4096
 
 section .multiboot.text
 extern kmain
@@ -61,16 +63,23 @@ l2:
     or edx, 0x103
     mov [edi], edx
 
-    sub esi, 0x400000
-    sub edi, 0x400000
+    add esi, 0x400000
+    add edi, 0x400000
+
+    mov edx, esi
+    or edx, 0x103
+    mov [edi], edx
+
+    sub esi, 0x800000
+    sub edi, 0x800000
 
     loop l1
 
 l3:
-    mov eax, pt_boot2 - 0xC0000000 + 1022*4
+    mov eax, pt_boot3 - 0xC0000000 + 1022*4
     mov ebx, 0xB8003 ; VGA buffer
     mov [eax], ebx
-	mov eax, pt_boot2 - 0xC0000000 + 1023*4
+	mov eax, pt_boot3 - 0xC0000000 + 1023*4
     mov ebx, pd_boot ; pd_boot address
     mov [eax], ebx
 
@@ -81,6 +90,9 @@ l3:
     mov ebx, pt_boot2 - 0xC0000000 + 0x003
     mov [eax+1*4], ebx
     mov [eax+769*4], ebx
+    mov ebx, pt_boot3 - 0xC0000000 + 0x003
+    mov [eax+2*4], ebx
+    mov [eax+770*4], ebx
 
     mov eax, pd_boot - 0xC0000000
     mov cr3, eax
@@ -102,6 +114,8 @@ enter_kernel:
     mov eax, [pd_boot+0*4]
     mov eax, 0
 	mov eax, [pd_boot+1*4]
+    mov eax, 0
+	mov eax, [pd_boot+2*4]
     mov eax, 0
 
     mov ecx, cr3

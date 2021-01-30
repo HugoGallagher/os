@@ -7,13 +7,12 @@ gdtr dw 0
      dd 0
 
 gdt_load:
-    mov eax, [esp+4]
-    mov [gdtr+2], eax
-    mov ax, [esp+8]
-    mov [gdtr], ax
     cli
+    mov ax, [esp+4]
+    mov [gdtr], ax
+    mov eax, [esp+6]
+    mov [gdtr+2], eax
     lgdt[gdtr]
-    sti
     ret
 
 gdt_reload_cs:
