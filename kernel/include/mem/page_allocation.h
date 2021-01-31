@@ -36,6 +36,8 @@ struct PageAllocater
     PABitmap2* b3;
     uint32_t a;
     uint32_t bitmaps;
+
+    PageDirectory* k_page_dir;
 };
 
 void pa_init(PageAllocater* pa, multiboot_info_t* mbi);

@@ -14,10 +14,6 @@
 #include "interrupts/isrs.h"
 #include "interrupts/pic.h"
 
-extern void* pd_boot;
-extern void* pt_boot1;
-extern void* pt_boot2;
-
 void kmain(multiboot_info_t* mbi)
 {
     kernel_end = &_kernel_end;
@@ -41,6 +37,7 @@ void kmain(multiboot_info_t* mbi)
     gdt_init(&gdt_h, p_gdt, &task_manager);
     gdt_load(gdt_h);
     gdt_reload_cs();
+    tss_reload();
 
     terminal_writestring("Initialising IDT\n");
     IDTHeader idt_h;
@@ -52,6 +49,8 @@ void kmain(multiboot_info_t* mbi)
     idt_load(&idt_h);
 
     terminal_writestring("Works!\n");
+
+    pg_get_phys_addr(0xC0800000);
 
     kernel_loop();
 

@@ -61,6 +61,8 @@ struct PageTable
 
 extern void pg_enable(PageDirectoryEntry* pd);
 
+void* pg_get_phys_addr(uint32_t v_addr);
+
 void pde_set_flag(PageDirectoryEntry* pde, enum pde_flags f, bool v);
 bool pde_get_flag(PageDirectoryEntry* pde, enum pde_flags f);
 void pde_set_addr(PageDirectoryEntry* pde, void* addr);

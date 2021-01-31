@@ -9,7 +9,7 @@ align 4
     dd CHECKSUM
 
 section .bss
-align 16
+align 4096
 k_stack_bottom:
     resb 16384
 k_stack_top:
@@ -27,17 +27,13 @@ section .multiboot.text
 extern kmain
 extern _kernel_start
 extern _kernel_end
-global pd_boot
-global pt_boot1
-global pt_boot2
 global _start
 _start:
     push ebx
 
-    ; the kernel has only 2 page directories, so it only has 7mb total
     mov edi, pt_boot1 - 0xC0000000
     mov esi, 0
-    mov ecx, 1024 ; last 2 pages are for VGA buffer and pd_boot address
+    mov ecx, 3072
     mov edx, 0
 
     jmp l1
@@ -49,38 +45,22 @@ l1:
     jle l3
 
 l2:
+    ; esi is the physical address
+    ; edi is the page table entry
+
+    mov edx, esi
+    or edx, 0x103
+    mov [edi], edx
+
     add esi, 4096
     add edi, 4
 
-    mov edx, esi
-    or edx, 0x103
-    mov [edi], edx
-
-    add esi, 0x400000
-    add edi, 0x400000
-
-    mov edx, esi
-    or edx, 0x103
-    mov [edi], edx
-
-    add esi, 0x400000
-    add edi, 0x400000
-
-    mov edx, esi
-    or edx, 0x103
-    mov [edi], edx
-
-    sub esi, 0x800000
-    sub edi, 0x800000
-
-    loop l1
+    dec ecx
+    jnz l1
 
 l3:
-    mov eax, pt_boot3 - 0xC0000000 + 1022*4
-    mov ebx, 0xB8003 ; VGA buffer
-    mov [eax], ebx
-	mov eax, pt_boot3 - 0xC0000000 + 1023*4
-    mov ebx, pd_boot ; pd_boot address
+    mov eax, pt_boot3 - 0xC0000000 + 1023*4
+    mov ebx, 0xB8003
     mov [eax], ebx
 
     mov eax, pd_boot - 0xC0000000
@@ -93,6 +73,9 @@ l3:
     mov ebx, pt_boot3 - 0xC0000000 + 0x003
     mov [eax+2*4], ebx
     mov [eax+770*4], ebx
+
+    mov ebx, pd_boot - 0xC0000000 + 0x003
+    mov [eax+1023*4], ebx
 
     mov eax, pd_boot - 0xC0000000
     mov cr3, eax
@@ -121,10 +104,6 @@ enter_kernel:
     mov ecx, cr3
     mov cr3, ecx
 
-	; mov eax, pt_boot1
-	; cmp eax, 0xC0000000
-	; jge l5
-
     pop ebx
 
     mov esp, k_stack_top
@@ -132,7 +111,3 @@ enter_kernel:
     push ebx
 
     call kmain
-
-l5:
-	cli
-	hlt
