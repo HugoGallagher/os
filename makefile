@@ -30,17 +30,29 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.asm $(COBJ)
 
 kernel: clean $(OBJS) $(HSRC)
 	$(CC) -T $(SRC_DIR)/linker.ld -o $(BUILD_DIR)/os.elf -ffreestanding -O2 -nostdlib $(OBJS) -lgcc
-	cp $(BUILD_DIR)/os.elf isodir/boot/os.elf
-	cp grub.cfg isodir/boot/grub/grub.cfg
-	grub-mkrescue -o os.iso isodir
 
 run: kernel
-	qemu-system-i386 -m 1024 -cdrom os.iso
+	sudo cp $(BUILD_DIR)/os.elf /mnt/os/boot/os.elf
+	sudo cp grub.cfg /mnt/os/boot/grub/grub.cfg
+	sudo umount /mnt/os
+	sudo mount /dev/loop41 /mnt/os
+	qemu-system-i386 -m 1024 -drive format=raw,file=disk.img
 
 debug: kernel
-	objcopy --only-keep-debug isodir/boot/os.elf isodir/boot/os.sym
-	objcopy --strip-debug isodir/boot/os.elf
-	qemu-system-i386 -s -S -m 1024 -cdrom os.iso
+	sudo cp $(BUILD_DIR)/os.elf /mnt/os/boot/os.elf
+	sudo cp grub.cfg /mnt/os/boot/grub/grub.cfg
+	sudo umount /mnt/os
+	sudo mount /dev/loop41 /mnt/os
+	objcopy --only-keep-debug $(BUILD_DIR)/os.elf $(BUILD_DIR)/os.sym
+	objcopy --strip-debug $(BUILD_DIR)/os.elf
+	qemu-system-i386 -m 1024 -drive format=raw,file=disk.img
+
+mount:
+	sudo losetup /dev/loop40 disk.img
+	sudo losetup /dev/loop41 disk.img -o 1048576
+	sudo mkdosfs -F32 -f 2 /dev/loop41
+	sudo mount /dev/loop41 /mnt/os
+	sudo grub-install --boot-directory /mnt/os/boot --no-floppy --modules="normal part_msdos fat configfile multiboot biosdisk" /dev/loop40
 
 .PHONY: clean
 

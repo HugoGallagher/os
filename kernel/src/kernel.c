@@ -13,6 +13,7 @@
 #include "interrupts/idt.h"
 #include "interrupts/isrs.h"
 #include "interrupts/pic.h"
+#include "files/ata.h"
 
 void kmain(multiboot_info_t* mbi)
 {
@@ -20,16 +21,16 @@ void kmain(multiboot_info_t* mbi)
 
     terminal_initialize();
 
-    terminal_writestring("Initialising heap\n");
+    //terminal_writestring("Initialising heap\n");
     heap_init(&kernel_heap, kernel_end, 8*1024*1024);
     void* p_gdt = kmalloc(64);
     void* p_idt = kmalloc(2048);
 
-    terminal_writestring("Initialising page frames\n");
+    //terminal_writestring("Initialising page frames\n");
     PageAllocater page_allocs;
     pa_init(&page_allocs, mbi);
 
-    terminal_writestring("Initialising GDT\n");
+    //terminal_writestring("Initialising GDT\n");
     TaskManager* task_manager = kmalloc(sizeof(TaskManager));
     tm_init(&task_manager, 64);
 
@@ -39,7 +40,7 @@ void kmain(multiboot_info_t* mbi)
     gdt_reload_cs();
     tss_reload();
 
-    terminal_writestring("Initialising IDT\n");
+    //terminal_writestring("Initialising IDT\n");
     IDTHeader idt_h;
     idt_h.size = 2047;
     idt_h.descriptors = p_idt;
@@ -48,12 +49,14 @@ void kmain(multiboot_info_t* mbi)
     idt_fill_256(&idt_h);
     idt_load(&idt_h);
 
+    uint16_t identify_data[256];
+
+    ata_identify(identify_data);
+    ata_read(0, 1);
+
     terminal_writestring("Works!\n");
 
-    pg_get_phys_addr(0xC0800000);
-
     kernel_loop();
-
 }
 
 void kernel_loop()
