@@ -71,9 +71,7 @@ void pic_handle_irq1()
     uint8_t sc = inb(0x60);
 
     if (sc & 0x80) {} // this should track keys like shift
-    else { cli_send_char(sc); }
-
-    //cli_send_char(sc);
+    //else { cli_send_char(sc); }
 
     pic_ack(1);
 }

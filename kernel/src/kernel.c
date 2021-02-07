@@ -14,6 +14,7 @@
 #include "interrupts/isrs.h"
 #include "interrupts/pic.h"
 #include "files/ata.h"
+#include "files/fat32.h"
 
 void kmain(multiboot_info_t* mbi)
 {
@@ -50,9 +51,19 @@ void kmain(multiboot_info_t* mbi)
     idt_load(&idt_h);
 
     uint16_t identify_data[256];
+    uint16_t* mbr;
+    MBRPartition partition;
 
     ata_identify(identify_data);
-    ata_read(0, 1);
+    mbr = ata_read(0, 0, 1);
+    partition = mbr_get_partition(mbr, 0);
+
+    FAT32FS fat32fs;
+    fat32_init(&fat32fs, partition);
+
+    uint32_t* file = kmalloc(512);
+    fat32_read(&fat32fs, file, "aa/asdf/eee/asdfabc/asdf", 24);
+    terminal_writehex(file[0]);
 
     terminal_writestring("Works!\n");
 

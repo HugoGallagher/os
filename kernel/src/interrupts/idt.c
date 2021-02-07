@@ -9,6 +9,7 @@
 
 void idt_handle(uint32_t a, uint32_t b)
 {
+    terminal_writestring("Exception occurred:\n");
     terminal_writehex(a);
     //terminal_writestring("Exception occurred");
     asm("cli");
