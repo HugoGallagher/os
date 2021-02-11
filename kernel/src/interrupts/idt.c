@@ -11,7 +11,6 @@ void idt_handle(uint32_t a, uint32_t b)
 {
     terminal_writestring("Exception occurred:\n");
     terminal_writehex(a);
-    //terminal_writestring("Exception occurred");
     asm("cli");
     asm("hlt");
 }
@@ -279,12 +278,10 @@ void (*interrupt_handler_addresses[256])() =
 IDTDescriptor* idt_create_descriptor(IDTHeader* ih, uint8_t interrupt_code, uint32_t offset, bool in_memory, uint8_t dpl, bool gate_size, uint16_t segment_selector)
 {
     IDTDescriptor* cd = &(ih->descriptors[interrupt_code]); // current descriptor
-
     uint8_t capped_dpl = dpl;
 
     if (dpl > 3)
         capped_dpl = 3;
-
     cd->offset_high = offset >> 16;
     cd->offset_low = offset & 0x0000FFFF;
 

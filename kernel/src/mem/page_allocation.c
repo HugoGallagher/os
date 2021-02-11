@@ -9,15 +9,11 @@
 #include "mem/paging.h"
 #include "interface/terminal.h"
 
-void pa_init(PageAllocater* pa, multiboot_info_t* mbi)
+void pa_init(multiboot_info_t* mbi)
 {
-    /*
-
-    go through every physical page aligned address and check if in use in
-    use = free in mmap and above reserved kernel memory allocations are
-    stored in a three-tiered cascading bitmap
-
-    */
+    // go through every physical page aligned address and check if in use
+    // in use = free in mmap and above reserved kernel memory
+    // allocations are stored in a three-tiered cascading bitmap
 
     uint32_t available_memory = 0;
     multiboot_memory_map_t* mbim = mbi->mmap_addr;
@@ -47,13 +43,13 @@ void pa_init(PageAllocater* pa, multiboot_info_t* mbi)
     total_pages_aligned += (32*32*32*32) - (total_pages_aligned % (32*32*32*32));
     uint32_t packed_allocs = total_pages_aligned - total_pages;
     uint32_t bitmaps_needed = (total_pages_aligned / (32*32*32*32)) * 8;
-    pa->bitmaps = bitmaps_needed;
+    page_allocs.bitmaps = bitmaps_needed;
 
-    pa->b3 = kmalloc(sizeof(PABitmap2) * bitmaps_needed);
-    bzero(pa->b3, sizeof(PABitmap2) * bitmaps_needed);
+    page_allocs.b3 = kmalloc(sizeof(Bitmap2) * bitmaps_needed);
+    bzero(page_allocs.b3, sizeof(Bitmap2) * bitmaps_needed);
     for (uint8_t i = 0; i < (32 - bitmaps_needed); i++)
     {
-        pa->a |= 1 << (31 - i);
+        page_allocs.a |= 1 << (31 - i);
     }
 
     for (uint32_t i = 0; i < bitmaps_needed; i++)
@@ -68,7 +64,7 @@ void pa_init(PageAllocater* pa, multiboot_info_t* mbi)
 
                     if (!pa_check_addr(addr, mbi) || addr < 4*1024*1024 * KERNEL_PAGE_TABLES || addr > available_memory)
                     {
-                        pa->b3[i].b2[j].b1[k] |= 1 << l;
+                        page_allocs.b3[i].b2[j].b1[k] |= 1 << l;
                         //terminal_writehex(pa->b3[i].b2[j].b1[k]);
                     }
                 }
@@ -89,17 +85,17 @@ void pa_init(PageAllocater* pa, multiboot_info_t* mbi)
 
                     if (!pa_check_addr(addr, mbi) || addr < 4*1024*1024 * KERNEL_PAGE_TABLES || addr > available_memory)
                     {
-                        if (pa->b3[i].b2[j].b1[k] == 0xFFFFFFFF)
+                        if (page_allocs.b3[i].b2[j].b1[k] == 0xFFFFFFFF)
                         {
-                            pa->b3[i].b2[j].a |= 1 << k;
+                            page_allocs.b3[i].b2[j].a |= 1 << k;
 
-                            if (pa->b3[i].b2[j].a == 0xFFFFFFFF)
+                            if (page_allocs.b3[i].b2[j].a == 0xFFFFFFFF)
                             {
-                                pa->b3[i].a |= 1 << j;
+                                page_allocs.b3[i].a |= 1 << j;
 
-                                if (pa->b3[i].a == 0xFFFFFFFF)
+                                if (page_allocs.b3[i].a == 0xFFFFFFFF)
                                 {
-                                    pa->a |= 1 << i;
+                                    page_allocs.a |= 1 << i;
                                 }
                             }
                         }
@@ -110,33 +106,33 @@ void pa_init(PageAllocater* pa, multiboot_info_t* mbi)
     }
 }
 
-void* pa_alloc(PageAllocater* pa)
+uint32_t pa_alloc()
 {
-    for (uint32_t i = 0; i < pa->bitmaps; i++) { if (!(pa->a & 1 << i))
+    for (uint32_t i = 0; i < page_allocs.bitmaps; i++) { if (!(page_allocs.a & 1 << i))
     {
-        for (uint32_t j = 0; j < 32; j++) { if (!(pa->b3[i].a & 1 << j))
+        for (uint32_t j = 0; j < 32; j++) { if (!(page_allocs.b3[i].a & 1 << j))
         {
-            for (uint32_t k = 0; k < 32; k++) { if (!(pa->b3[i].b2[j].a & 1 << k))
+            for (uint32_t k = 0; k < 32; k++) { if (!(page_allocs.b3[i].b2[j].a & 1 << k))
             {
-                for (uint32_t l = 0; l < 32; l++) { if (!(pa->b3[i].b2[j].b1[k] & 1 << l))
+                for (uint32_t l = 0; l < 32; l++) { if (!(page_allocs.b3[i].b2[j].b1[k] & 1 << l))
                 {
-                    pa->b3[i].b2[j].b1[k] |= 1 << l;
-                    if (pa->b3[i].b2[j].b1[k] == 0xFFFFFFFF)
+                    page_allocs.b3[i].b2[j].b1[k] |= 1 << l;
+                    if (page_allocs.b3[i].b2[j].b1[k] == 0xFFFFFFFF)
                     {
-                        pa->b3[i].b2[j].a |= 1 << k;
+                        page_allocs.b3[i].b2[j].a |= 1 << k;
 
-                        if (pa->b3[i].b2[j].a == 0xFFFFFFFF)
+                        if (page_allocs.b3[i].b2[j].a == 0xFFFFFFFF)
                         {
-                            pa->b3[i].a |= 1 << j;
+                            page_allocs.b3[i].a |= 1 << j;
 
-                            if (pa->b3[i].a == 0xFFFFFFFF)
+                            if (page_allocs.b3[i].a == 0xFFFFFFFF)
                             {
-                                pa->a |= 1 << i;
+                                page_allocs.a |= 1 << i;
                             }
                         }
                     }
 
-                    void* addr = (l + k * 32 + j * 32*32 + i * 32*32*32) * PAGE_SIZE;
+                    uint32_t addr = (l + k * 32 + j * 32*32 + i * 32*32*32) * PAGE_SIZE;
 
                     return addr;
                 }}
@@ -145,7 +141,7 @@ void* pa_alloc(PageAllocater* pa)
     }}
 }
 
-void pa_free(PageAllocater* pa, uint32_t addr)
+void pa_free(uint32_t addr)
 {
     uint32_t a = addr / PAGE_SIZE;
 
@@ -154,19 +150,19 @@ void pa_free(PageAllocater* pa, uint32_t addr)
     uint32_t k = (a & 0b00000000001111100000) >> 5;
     uint32_t l = (a & 0b00000000000000011111) >> 0;
 
-    pa->b3[i].b2[j].b1[k] &= ~(1 << l);
+    page_allocs.b3[i].b2[j].b1[k] &= ~(1 << l);
 
-    if (pa->b3[i].b2[j].b1[k] == 0x00000000)
+    if (page_allocs.b3[i].b2[j].b1[k] == 0x00000000)
     {
-        pa->b3[i].b2[j].a &= ~(1 << k);
+        page_allocs.b3[i].b2[j].a &= ~(1 << k);
 
-        if (pa->b3[i].b2[j].a == 0x00000000)
+        if (page_allocs.b3[i].b2[j].a == 0x00000000)
         {
-            pa->b3[i].a &= ~(1 << j);
+            page_allocs.b3[i].a &= ~(1 << j);
 
-            if (pa->b3[i].a == 0x00000000)
+            if (page_allocs.b3[i].a == 0x00000000)
             {
-                pa->a &= ~(1 << i);
+                page_allocs.a &= ~(1 << i);
             }
         }
     }

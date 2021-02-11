@@ -8,6 +8,15 @@ void* pg_get_phys_addr(uint32_t v_addr)
     uint32_t* pt = 0xFFC00000 + i_pd * 0x1000;
 
     return (pt[i_pt] & 0xFFFFF000) + (v_addr & 0x00000FFF);
+
+}
+PageDirectoryEntry* pg_get_pde(uint32_t pdi)
+{
+    return 0xFFFFF000 + pdi * 4;
+}
+PageTableEntry* pg_get_pte(uint32_t pti, uint32_t pdi)
+{
+    return 0xFFC00000 + pti * 0x1000 + pdi * 4;
 }
 
 void pde_set_flag(PageDirectoryEntry* pde, enum pde_flags f, bool v)
@@ -44,4 +53,9 @@ void pte_set_addr(PageTableEntry* pte, void* addr)
 void* pte_get_addr(PageTableEntry* pte)
 {
     return pte->data & 0xFFFFF000;
+}
+
+void pg_load_cr3(PageDirectory* pd)
+{
+    load_cr3(pg_get_phys_addr(pd));
 }

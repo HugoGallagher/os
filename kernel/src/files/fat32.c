@@ -48,18 +48,14 @@ void fat32_init(FAT32FS* fs, MBRPartition partition)
 
 void fat32_read(FAT32FS* fs, uint8_t* buffer, char* path, uint8_t path_size)
 {
-    FAT32DirEntry dir_entry = fat32_get_file_dir_entry(fs, path, path_size);
-    terminal_writehex(dir_entry.attributes);
-    terminal_writehex(dir_entry.size);
+    FAT32DirEntry dir_entry = fat32_get_file_info(fs, path, path_size);
 
     if (dir_entry.attributes & 0x10 || dir_entry.size == 0)
         return;
 
     uint32_t size_in_clusters = (dir_entry.size - 1);
-    terminal_writehex(size_in_clusters);
     size_in_clusters += (fs->bpb.sector_size * fs->bpb.cluster_size) - size_in_clusters % (fs->bpb.sector_size * fs->bpb.cluster_size);
     size_in_clusters /= (fs->bpb.sector_size * fs->bpb.cluster_size);
-    terminal_writehex(size_in_clusters);
 
     uint32_t current_cluster = (dir_entry.cluster_number_high << 16) + dir_entry.cluster_number_low;
     for (uint32_t i = 0; i < size_in_clusters; i++)
@@ -90,7 +86,7 @@ uint32_t fat32_get_sector_from_cluster(FAT32FS* fs, uint32_t c)
     return fs->sector_data + (c - 2) * fs->bpb.cluster_size;
 }
 
-FAT32DirEntry fat32_get_file_dir_entry(FAT32FS* fs, char* path, uint8_t path_size)
+FAT32DirEntry fat32_get_file_info(FAT32FS* fs, char* path, uint8_t path_size)
 {
     // calculate depth of path and allocate
     uint8_t depth = 1;

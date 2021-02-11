@@ -16,24 +16,25 @@
 #include "files/ata.h"
 #include "files/fat32.h"
 
+typedef void (*program_func)(void);
+
 void kmain(multiboot_info_t* mbi)
 {
     kernel_end = &_kernel_end;
 
     terminal_initialize();
 
-    //terminal_writestring("Initialising heap\n");
-    heap_init(&kernel_heap, kernel_end, 8*1024*1024);
+    terminal_writestring("Initialising heap\n");
+    heap_init(&kernel_heap, kernel_end, 0x58*1024*1024);
     void* p_gdt = kmalloc(64);
     void* p_idt = kmalloc(2048);
 
-    //terminal_writestring("Initialising page frames\n");
-    PageAllocater page_allocs;
-    pa_init(&page_allocs, mbi);
+    terminal_writestring("Initialising page frames\n");
+    pa_init(mbi);
 
-    //terminal_writestring("Initialising GDT\n");
+    terminal_writestring("Initialising GDT\n");
     TaskManager* task_manager = kmalloc(sizeof(TaskManager));
-    tm_init(&task_manager, 64);
+    tm_init(task_manager, 64);
 
     GDTHeader gdt_h;
     gdt_init(&gdt_h, p_gdt, &task_manager);
@@ -41,7 +42,7 @@ void kmain(multiboot_info_t* mbi)
     gdt_reload_cs();
     tss_reload();
 
-    //terminal_writestring("Initialising IDT\n");
+    terminal_writestring("Initialising IDT\n");
     IDTHeader idt_h;
     idt_h.size = 2047;
     idt_h.descriptors = p_idt;
@@ -61,9 +62,12 @@ void kmain(multiboot_info_t* mbi)
     FAT32FS fat32fs;
     fat32_init(&fat32fs, partition);
 
-    uint32_t* file = kmalloc(512);
-    fat32_read(&fat32fs, file, "aa/asdf/eee/asdfabc/asdf", 24);
-    terminal_writehex(file[0]);
+    //tsk_init(task_manager->tasks + 0, task_manager, 512, &fat32fs, "programs/one/program.bin", 24);
+
+//    terminal_write(file, 24);
+
+//    program_func test = file;
+//    test();
 
     terminal_writestring("Works!\n");
 

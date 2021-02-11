@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define KERNEL_PAGE_TABLES 3
+#define KERNEL_PAGE_TABLES 0x80
 
 enum pde_flags
 {
@@ -62,6 +62,8 @@ struct PageTable
 extern void pg_enable(PageDirectoryEntry* pd);
 
 void* pg_get_phys_addr(uint32_t v_addr);
+PageDirectoryEntry* pg_get_pde(uint32_t pdi);
+PageTableEntry* pg_get_pte(uint32_t pdi, uint32_t pti);
 
 void pde_set_flag(PageDirectoryEntry* pde, enum pde_flags f, bool v);
 bool pde_get_flag(PageDirectoryEntry* pde, enum pde_flags f);
@@ -72,3 +74,5 @@ void pte_set_flag(PageTableEntry* pte, enum pte_flags f, bool v);
 bool pte_get_flag(PageTableEntry* pte, enum pte_flags f);
 void pte_set_addr(PageTableEntry* pte, void* addr);
 void* pte_get_addr(PageTableEntry* pte);
+
+void pg_load_cr3(PageDirectory* pd);

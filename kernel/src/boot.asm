@@ -1,3 +1,5 @@
+KERNEL_PAGES equ 0x80
+
 FLAGS    equ 0x3
 MAGIC    equ 0x1BADB002
 CHECKSUM equ -(MAGIC + FLAGS)
@@ -9,19 +11,15 @@ align 4
     dd CHECKSUM
 
 section .bss
-align 4096
+align 0x1000
 k_stack_bottom:
-    resb 16384
+    resb 0x4000
 k_stack_top:
 
 pd_boot:
-    resb 4096
-pt_boot1:
-    resb 4096
-pt_boot2:
-    resb 4096
-pt_boot3:
-    resb 4096
+    resb 0x1000
+pt_boot:
+    resb KERNEL_PAGES * 0x1000
 
 section .multiboot.text
 extern kmain
@@ -31,9 +29,9 @@ global _start
 _start:
     push ebx
 
-    mov edi, pt_boot1 - 0xC0000000
+    mov edi, pt_boot - 0xC0000000
     mov esi, 0
-    mov ecx, 3072
+    mov ecx, KERNEL_PAGES * 1024
     mov edx, 0
 
     jmp l1
@@ -59,21 +57,27 @@ l2:
     jnz l1
 
 l3:
-    mov eax, pt_boot3 - 0xC0000000 + 1023*4
-    mov ebx, 0xB8003
-    mov [eax], ebx
-
     mov eax, pd_boot - 0xC0000000
-    mov ebx, pt_boot1 - 0xC0000000 + 0x003
-    mov [eax], ebx
-    mov [eax+768*4], ebx
-    mov ebx, pt_boot2 - 0xC0000000 + 0x003
-    mov [eax+1*4], ebx
-    mov [eax+769*4], ebx
-    mov ebx, pt_boot3 - 0xC0000000 + 0x003
-    mov [eax+2*4], ebx
-    mov [eax+770*4], ebx
+    mov ebx, pt_boot - 0xC0000000 + 0x003
+    mov ecx, KERNEL_PAGES
 
+l4:
+    mov [eax], ebx
+    add eax, 768*4
+    mov [eax], ebx
+    sub eax, 768*4
+
+    add eax, 4
+    add ebx, 4096
+
+    dec ecx
+    cmp ecx, 0
+    je l5
+
+    jmp l4
+
+l5:
+    mov eax, pd_boot - 0xC0000000
     mov ebx, pd_boot - 0xC0000000 + 0x003
     mov [eax+1023*4], ebx
 
@@ -88,21 +92,31 @@ l3:
     or eax, 0x80000000
     mov cr0, eax
 
-    lea eax, [enter_kernel]
+    lea eax, [unmap_identity_pages]
     jmp near eax
 
 section .text
 
-enter_kernel:
-    mov eax, [pd_boot+0*4]
-    mov eax, 0
-	mov eax, [pd_boot+1*4]
-    mov eax, 0
-	mov eax, [pd_boot+2*4]
-    mov eax, 0
+unmap_identity_pages:
+    mov eax, pd_boot
+    mov ecx, KERNEL_PAGES
+    jmp unmap
 
-    mov ecx, cr3
-    mov cr3, ecx
+unmap:
+    mov ebx, [eax]
+    mov ebx, 0
+
+    add eax, 4
+
+    dec ecx
+    cmp ecx, 0
+    je unmap
+
+    jmp enter_kernel
+
+enter_kernel:
+    mov eax, cr3
+    mov cr3, eax
 
     pop ebx
 

@@ -2,7 +2,7 @@
 
 #include "gnu/multiboot.h"
 
-#include "lib/linkedlist.h"
+#include "lib/bitmap.h"
 #include "lib/mem.h"
 #include "mem/paging.h"
 
@@ -20,27 +20,19 @@ typedef struct PABitmap2 PABitmap2;
 
 typedef struct PageAllocater PageAllocater;
 
-struct PABitmap1
-{
-    uint32_t b1[32];
-    uint32_t a;
-};
-struct PABitmap2
-{
-    PABitmap1 b2[32];
-    uint32_t a;
-};
-
 struct PageAllocater
 {
-    PABitmap2* b3;
+    Bitmap2* b3;
     uint32_t a;
     uint32_t bitmaps;
 
     PageDirectory* k_page_dir;
 };
 
-void pa_init(PageAllocater* pa, multiboot_info_t* mbi);
-void* pa_alloc(PageAllocater* pa);
-void pa_free(PageAllocater* pa, uint32_t addr);
+static PageAllocater page_allocs;
+
+void pa_init(multiboot_info_t* mbi);
+uint32_t pa_alloc();
+void pa_free(uint32_t addr);
+
 uint8_t pa_check_addr(uint32_t addr, multiboot_info_t* mbi);

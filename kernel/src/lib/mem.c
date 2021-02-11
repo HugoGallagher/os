@@ -92,16 +92,11 @@ void* kmalloc(uint32_t s)
         current_node = current_node->next;
     }
 
-    //terminal_writehex(current_alloc->data);
-
-    //terminal_writehex(*(uint8_t*)&found_node);
-
-    //asm("hlt");
-
     if (found_node)
         return current_alloc->data;
     else
-        return 0;
+        terminal_writestring("Failed to allocate memory\n");
+        //return 0;
 }
 
 void kfree(void* p)

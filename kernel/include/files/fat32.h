@@ -100,5 +100,5 @@ void fat32_read(FAT32FS* fs, uint8_t* buffer, char* path, uint8_t path_size);
 uint32_t fat32_get_next_cluster(FAT32FS* fs, uint32_t cc);
 uint32_t fat32_get_sector_from_cluster(FAT32FS* fs, uint32_t c);
 
-FAT32DirEntry fat32_get_file_dir_entry(FAT32FS* fs, char* path, uint8_t path_size);
+FAT32DirEntry fat32_get_file_info(FAT32FS* fs, char* path, uint8_t path_size);
 FAT32DirEntry fat32_get_dir_entry(FAT32FS* fs, uint32_t c, char* n);
