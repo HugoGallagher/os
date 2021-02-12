@@ -1,9 +1,0 @@
-megs: 256
-display_library: sdl2
-romimage: file=/home/hugo/Documents/bochs-2.6.11/bios/BIOS-bochs-latest
-vgaromimage: file=/home/hugo/Documents/bochs-2.6.11/bios/VGABIOS-lgpl-latest
-ata0-master: type=disk, path=disk.img, status=inserted, cylinders=99, heads=16, spt=32
-boot: disk
-log: bochslog.txt
-clock: sync=realtime, time0=local
-cpu: count=1, ips=1000000
