@@ -1,4 +1,4 @@
-KERNEL_PAGES equ 0x80
+KERNEL_PAGES equ 0x1
 
 FLAGS    equ 0x3
 MAGIC    equ 0x1BADB002

@@ -3,7 +3,6 @@
 #include "gnu/multiboot.h"
 
 #include "lib/bitmap.h"
-#include "lib/mem.h"
 #include "mem/paging.h"
 
 #define AVAILABLE_MEMORY (1024*1024*1024) // only works for systems with 1GB memory
@@ -26,13 +25,17 @@ struct PageAllocater
     uint32_t a;
     uint32_t bitmaps;
 
+    uint32_t available_memory;
+
     PageDirectory* k_page_dir;
 };
 
 static PageAllocater page_allocs;
 
-void pa_init(multiboot_info_t* mbi);
+void* pa_init(void* start, multiboot_info_t* mbi);
 uint32_t pa_alloc();
 void pa_free(uint32_t addr);
 
 uint8_t pa_check_addr(uint32_t addr, multiboot_info_t* mbi);
+
+uint32_t pa_get_available_memory();

@@ -6,7 +6,7 @@ void bzero(void *s, size_t n)
 {
     uint8_t* s_as_array = s;
 
-    for (size_t i = 0; i <= (n - 1); i++)
+    for (size_t i = 0; i < n; i++)
     {
         //terminal_writehex(s + i);
         s_as_array[i] = 0;

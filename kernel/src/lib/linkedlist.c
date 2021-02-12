@@ -14,20 +14,17 @@ void ll1_init(LinkedList1* l, uint32_t size)
 
     l->head = 0;
     l->tail = 0;
+    uint8_t* p_nodes = kmalloc(size * sizeof(LinkedList1Node));
+    uint8_t* p_nodes_allocs = kmalloc(size * 4);
 
-    uint8_t* addr = kmalloc(size * sizeof(LinkedList1Node) + size * 4);
-
-    bzero(addr, size * sizeof(LinkedList1Node) + size * 4);
-
-    uint8_t* p_allocs = addr + sizeof(LinkedList1Node) * size;
-
-    //terminal_writehex(size);
+    bzero(p_nodes, size * sizeof(LinkedList1Node));
+    bzero(p_nodes_allocs, size * 4);
 
     l->node_storage.parent = l;
     l->node_storage.max_count = size;
     l->node_storage.count = 0;
-    l->node_storage.nodes = addr;
-    l->node_storage.node_allocs = p_allocs;
+    l->node_storage.nodes = p_nodes;
+    l->node_storage.node_allocs = p_nodes_allocs;
 }
 void ll1_init_to_addr(LinkedList1* l, uint8_t* addr, uint32_t size)
 {
@@ -36,7 +33,6 @@ void ll1_init_to_addr(LinkedList1* l, uint8_t* addr, uint32_t size)
 
     l->head = 0;
     l->tail = 0;
-
     bzero(addr, size * sizeof(LinkedList1Node) + size * 4);
 
     uint8_t* p_allocs = addr + sizeof(LinkedList1Node) * size;
@@ -51,6 +47,7 @@ void ll1_init_to_addr(LinkedList1* l, uint8_t* addr, uint32_t size)
 LinkedList1Node* ll1_push_front(LinkedList1* l, void* n)
 {
     LinkedList1Node* node = ll1_ns_add(&(l->node_storage), n);
+    //LinkedList1Node* node;
 
     node->next = l->head;
     l->head = node;
@@ -124,6 +121,16 @@ LinkedList1Node* ll1_insert(LinkedList1* l, LinkedList1Node* node, void* n)
 
     return n_node;
 }
+uint32_t ll1_insert_return_index(LinkedList1* l, LinkedList1Node* node, void* n)
+{
+    uint32_t index = ll1_ns_add_return_index(&(l->node_storage), n);
+    LinkedList1Node* n_node = &(l->node_storage.nodes[index]);
+
+    n_node->next = node->next;
+    node->next = n_node;
+
+    return index;
+}
 void* ll1_remove_front(LinkedList1* l)
 {
     if (l->head == 0)
@@ -188,7 +195,7 @@ uint32_t ll1_remove_back_return_index(LinkedList1* l)
     return index;
 }
 
-void* ll1_remove(LinkedList1* l, LinkedList1Node* n)
+void ll1_remove(LinkedList1* l, LinkedList1Node* n)
 {
     if (l->head == 0)
     {
@@ -207,6 +214,28 @@ void* ll1_remove(LinkedList1* l, LinkedList1Node* n)
     LinkedList1Node* cn_next = cn->next->next;
     ll1_ns_remove(&(l->node_storage), cn->next);
     cn->next = cn_next;
+}
+uint32_t ll1_remove_return_index(LinkedList1* l, LinkedList1Node* n)
+{
+    if (l->head == 0)
+    {
+        return;
+    }
+
+    LinkedList1Node* cn = l->head;
+    for (int i = 0; i < l->node_storage.count; i++)
+    {
+        cn = cn->next;
+
+        if (cn->next = n)
+            break;
+    }
+
+    LinkedList1Node* cn_next = cn->next->next;
+    uint32_t index = ll1_ns_remove_return_index(&(l->node_storage), cn->next);
+
+    cn->next = cn_next;
+    return index;
 }
 LinkedList1Node* ll1_ns_add(LinkedList1NodeStorage* ns, void* n)
 {
@@ -229,7 +258,6 @@ LinkedList1Node* ll1_ns_add(LinkedList1NodeStorage* ns, void* n)
                 {
                     LinkedList1Node* node = &(ns->nodes[(i*32)+j]);
                     node->data = n;
-
                     ns->count++;
                     ns->node_allocs[i] |= 1 << j;
                     ns->nodes[(i*32)+j] = *node;
@@ -247,6 +275,8 @@ void ll1_ns_remove(LinkedList1NodeStorage* ns, LinkedList1Node* n)
 
     uint32_t offset = index % 64;
     index = (index - offset) / 64;
+
+    ns->count--;
 
     ns->node_allocs[index] |= 1 << offset;
 }
@@ -290,6 +320,8 @@ uint32_t ll1_ns_remove_return_index(LinkedList1NodeStorage* ns, LinkedList1Node*
 
     uint32_t offset = index % 64;
     index = (index - offset) / 64;
+
+    ns->count--;
 
     ns->node_allocs[index] |= 1 << offset;
 

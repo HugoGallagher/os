@@ -1,5 +1,7 @@
 isodir/*
 kernel/build/*
-*.iso
 *.img
+
 makefile
+bochstc.txt
+bochslog.txt

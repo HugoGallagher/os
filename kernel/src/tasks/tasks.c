@@ -102,9 +102,9 @@ void ta_init(TaskAllocater* ta, uint32_t c)
     ta->pds = kmalloc(sizeof(PageDirectory) * (c + 1));
     ta->pds += 1;
     ta->pds = (uint32_t)ta->pds & 0xFFFFF000;
-    terminal_writehex(ta->pds);
-    terminal_writehex(sizeof(PageDirectory) * (c + 1));
-    terminal_writehex(kmalloc(512));
+//    terminal_writehex(ta->pds);
+//    terminal_writehex(sizeof(PageDirectory) * (c + 1));
+//    terminal_writehex(kmalloc(512));
 
     // set padded pd allocs to allocated
     for (uint32_t i = 0; i < ta->pd_bc; i++)

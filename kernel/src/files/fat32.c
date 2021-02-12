@@ -36,6 +36,8 @@ void fat32_init(FAT32FS* fs, MBRPartition partition)
 
     uint8_t* fsi = ata_read(fs->ebpb.fs_info_sector, fs->start, 1);
 
+    //kmalloc(575);
+
     fs->fs_info.free_clusters = *(uint32_t*)(fsi + 488);
     fs->fs_info.free_clusters = *(uint32_t*)(fsi + 492);
 

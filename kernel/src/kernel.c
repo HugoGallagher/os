@@ -24,17 +24,19 @@ void kmain(multiboot_info_t* mbi)
 
     terminal_initialize();
 
-    terminal_writestring("Initialising heap\n");
-    heap_init(&kernel_heap, kernel_end, 0x58*1024*1024);
+//    terminal_writestring("Initialising page frames\n");
+    void* heap_start = pa_init(kernel_end, mbi);
+
+//    terminal_writestring("Initialising heap\n");
+    kheap_init(heap_start);
+
     void* p_gdt = kmalloc(64);
     void* p_idt = kmalloc(2048);
+    //void* p_idt = 0xC0000000;
 
-    terminal_writestring("Initialising page frames\n");
-    pa_init(mbi);
-
-    terminal_writestring("Initialising GDT\n");
+//    terminal_writestring("Initialising GDT\n");
     TaskManager* task_manager = kmalloc(sizeof(TaskManager));
-    tm_init(task_manager, 64);
+    //tm_init(task_manager, 64);
 
     GDTHeader gdt_h;
     gdt_init(&gdt_h, p_gdt, &task_manager);
@@ -42,7 +44,7 @@ void kmain(multiboot_info_t* mbi)
     gdt_reload_cs();
     tss_reload();
 
-    terminal_writestring("Initialising IDT\n");
+//    terminal_writestring("Initialising IDT\n");
     IDTHeader idt_h;
     idt_h.size = 2047;
     idt_h.descriptors = p_idt;

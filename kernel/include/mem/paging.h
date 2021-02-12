@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define KERNEL_PAGE_TABLES 0x80
+#define KERNEL_PAGE_TABLES 0x1
 
 enum pde_flags
 {
