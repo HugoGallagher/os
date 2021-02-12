@@ -3,5 +3,5 @@ kernel/build/*
 *.img
 
 makefile
-bochstc.txt
+bochsrc.txt
 bochslog.txt
