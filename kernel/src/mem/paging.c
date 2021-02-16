@@ -55,7 +55,7 @@ void* pte_get_addr(PageTableEntry* pte)
     return pte->data & 0xFFFFF000;
 }
 
-void pg_load_cr3(PageDirectory* pd)
+void pg_load_pd(PageDirectory* pd)
 {
     load_cr3(pg_get_phys_addr(pd));
 }

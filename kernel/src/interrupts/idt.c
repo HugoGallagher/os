@@ -7,15 +7,24 @@
 
 #include "interface/terminal.h"
 
-void idt_handle(uint32_t a, uint32_t b)
+void idt_handle(uint32_t a, uint32_t b, GeneralRegisters rs)
 {
     terminal_writestring("Exception occurred:\n");
     terminal_writehex(a);
     asm("cli");
     asm("hlt");
 }
+void idt_handle_error(uint32_t a, uint32_t b, GeneralRegisters rs)
+{
+    terminal_writestring("Exception occurred:\n");
+    terminal_writehex(a);
+    terminal_writestring("Error code:\n");
+    terminal_writehex(b);
+    asm("cli");
+    asm("hlt");
+}
 
-void (*interrupt_handler_addresses[256])() =
+void (*interrupt_handler_addresses[128])() =
 {
     interrupt_handler_0,
 	interrupt_handler_1,
@@ -146,133 +155,6 @@ void (*interrupt_handler_addresses[256])() =
 	interrupt_handler_126,
 	interrupt_handler_127,
 	interrupt_handler_128,
-	interrupt_handler_129,
-	interrupt_handler_130,
-	interrupt_handler_131,
-	interrupt_handler_132,
-	interrupt_handler_133,
-	interrupt_handler_134,
-	interrupt_handler_135,
-	interrupt_handler_136,
-	interrupt_handler_137,
-	interrupt_handler_138,
-	interrupt_handler_139,
-	interrupt_handler_140,
-	interrupt_handler_141,
-	interrupt_handler_142,
-	interrupt_handler_143,
-	interrupt_handler_144,
-	interrupt_handler_145,
-	interrupt_handler_146,
-	interrupt_handler_147,
-	interrupt_handler_148,
-	interrupt_handler_149,
-	interrupt_handler_150,
-	interrupt_handler_151,
-	interrupt_handler_152,
-	interrupt_handler_153,
-	interrupt_handler_154,
-	interrupt_handler_155,
-	interrupt_handler_156,
-	interrupt_handler_157,
-	interrupt_handler_158,
-	interrupt_handler_159,
-	interrupt_handler_160,
-	interrupt_handler_161,
-	interrupt_handler_162,
-	interrupt_handler_163,
-	interrupt_handler_164,
-	interrupt_handler_165,
-	interrupt_handler_166,
-	interrupt_handler_167,
-	interrupt_handler_168,
-	interrupt_handler_169,
-	interrupt_handler_170,
-	interrupt_handler_171,
-	interrupt_handler_172,
-	interrupt_handler_173,
-	interrupt_handler_174,
-	interrupt_handler_175,
-	interrupt_handler_176,
-	interrupt_handler_177,
-	interrupt_handler_178,
-	interrupt_handler_179,
-	interrupt_handler_180,
-	interrupt_handler_181,
-	interrupt_handler_182,
-	interrupt_handler_183,
-	interrupt_handler_184,
-	interrupt_handler_185,
-	interrupt_handler_186,
-	interrupt_handler_187,
-	interrupt_handler_188,
-	interrupt_handler_189,
-	interrupt_handler_190,
-	interrupt_handler_191,
-	interrupt_handler_192,
-	interrupt_handler_193,
-	interrupt_handler_194,
-	interrupt_handler_195,
-	interrupt_handler_196,
-	interrupt_handler_197,
-	interrupt_handler_198,
-	interrupt_handler_199,
-	interrupt_handler_200,
-	interrupt_handler_201,
-	interrupt_handler_202,
-	interrupt_handler_203,
-	interrupt_handler_204,
-	interrupt_handler_205,
-	interrupt_handler_206,
-	interrupt_handler_207,
-	interrupt_handler_208,
-	interrupt_handler_209,
-	interrupt_handler_210,
-	interrupt_handler_211,
-	interrupt_handler_212,
-	interrupt_handler_213,
-	interrupt_handler_214,
-	interrupt_handler_215,
-	interrupt_handler_216,
-	interrupt_handler_217,
-	interrupt_handler_218,
-	interrupt_handler_219,
-	interrupt_handler_220,
-	interrupt_handler_221,
-	interrupt_handler_222,
-	interrupt_handler_223,
-	interrupt_handler_224,
-	interrupt_handler_225,
-	interrupt_handler_226,
-	interrupt_handler_227,
-	interrupt_handler_228,
-	interrupt_handler_229,
-	interrupt_handler_230,
-	interrupt_handler_231,
-	interrupt_handler_232,
-	interrupt_handler_233,
-	interrupt_handler_234,
-	interrupt_handler_235,
-	interrupt_handler_236,
-	interrupt_handler_237,
-	interrupt_handler_238,
-	interrupt_handler_239,
-	interrupt_handler_240,
-	interrupt_handler_241,
-	interrupt_handler_242,
-	interrupt_handler_243,
-	interrupt_handler_244,
-	interrupt_handler_245,
-	interrupt_handler_246,
-	interrupt_handler_247,
-	interrupt_handler_248,
-	interrupt_handler_249,
-	interrupt_handler_250,
-	interrupt_handler_251,
-	interrupt_handler_252,
-	interrupt_handler_253,
-	interrupt_handler_254,
-	interrupt_handler_255
 };
 
 IDTDescriptor* idt_create_descriptor(IDTHeader* ih, uint8_t interrupt_code, uint32_t offset, bool in_memory, uint8_t dpl, bool gate_size, uint16_t segment_selector)
@@ -298,9 +180,9 @@ IDTDescriptor* idt_create_descriptor(IDTHeader* ih, uint8_t interrupt_code, uint
 
 void idt_fill_256(IDTHeader* ih)
 {
-    for (uint8_t i = 0; i <= 254; i++)
+    for (uint8_t i = 0; i < 127; i++)
     {
-        idt_create_descriptor(ih, i, interrupt_handler_addresses[i], true, 0, true, 0x0008);
+        idt_create_descriptor(ih, i, interrupt_handler_addresses[i], true, 3, true, 0x0008);
     }
-    idt_create_descriptor(ih, 255, interrupt_handler_addresses[255], true, 0, true, 0x0008); // for some reason this coouldn't be included in the list
+    idt_create_descriptor(ih, 127, interrupt_handler_addresses[127], true, 3, true, 0x0008);
 }

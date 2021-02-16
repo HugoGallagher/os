@@ -176,14 +176,13 @@ void kfree(void* p)
     HeapAllocation* current_alloc;
     while (current_node != kheap.allocs.tail)
     {
-        //terminal_writehex(current_alloc->data);
         current_alloc = current_node->data;
         if (current_alloc->data == p)
         {
-            uint32_t index = ll1_remove_return_index(&(kheap.allocs), current_node);
-            current_alloc = kheap.alloc_data + index;
-            current_alloc->data = 0;
-            current_alloc->size = 0;
+//            uint32_t index = ll1_remove_return_index(&(kheap.allocs), current_node);
+//            current_alloc = kheap.alloc_data + index;
+//            current_alloc->data = 0;
+//            current_alloc->size = 0;
 
             return;
         }

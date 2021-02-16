@@ -13,10 +13,12 @@ align 4
 section .bss
 align 0x1000
 k_stack_bottom:
-    resb 0x4000
+    resb 0x8000
 k_stack_top:
 
 pd_boot:
+    resb 0x1000
+pt_tasks:
     resb 0x1000
 pt_boot:
     resb KERNEL_PAGES * 0x1000
@@ -77,9 +79,15 @@ l4:
     jmp l4
 
 l5:
+    ; recursively map page directory to last pde
     mov eax, pd_boot - 0xC0000000
     mov ebx, pd_boot - 0xC0000000 + 0x003
     mov [eax+1023*4], ebx
+
+    ; 2nd-past pde is for task information
+    mov eax, pd_boot - 0xC0000000
+    mov ebx, pt_tasks - 0xC0000000 + 0x003
+    mov [eax+1022*4], ebx
 
     mov eax, pd_boot - 0xC0000000
     mov cr3, eax

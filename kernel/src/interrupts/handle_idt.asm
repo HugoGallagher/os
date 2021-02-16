@@ -1,23 +1,26 @@
+extern terminal_writehex
+
+extern idt_handle
+extern idt_handle_error
+
 %macro no_error_interrupt_handler 1
 global interrupt_handler_%1
-extern idt_handle
 interrupt_handler_%1:
-;    pusha
+    pusha
     push dword 0
     push %1
     call idt_handle
-;    popa
+    popa
     iret
 %endmacro
 
 %macro error_interrupt_handler 1
 global interrupt_handler_%1
-extern idt_handle
 interrupt_handler_%1:
-;    pusha
+    pusha
     push %1
-    call idt_handle
-;    popa
+    call idt_handle_error
+    popa
     iret
 %endmacro
 
@@ -30,6 +33,143 @@ interrupt_handler_%1:
     popa
     iret
 %endmacro
+
+global interrupt_handler_127
+extern sys_call
+    interrupt_handler_127:
+    pusha
+    call sys_call
+    popa
+    iret
+
+extern ex_divide_error
+extern ex_debug
+extern ex_nmi
+extern ex_breakpoint
+extern ex_overflow
+extern ex_bound_range
+extern ex_invalid_opcode
+extern ex_device_not_available
+extern ex_double_fault
+extern ex_coprocesser_segment_overrun
+extern ex_invalid_tss
+extern ex_segment_not_present
+extern ex_stack_segment_fault
+extern ex_gpf
+extern ex_page_fault
+extern ex_reserved
+
+global interrupt_handler_0
+interrupt_handler_0:
+    pusha
+    call ex_divide_error
+    popa
+    iret
+
+global interrupt_handler_1
+interrupt_handler_1:
+    pusha
+    call ex_debug
+    popa
+    iret
+
+global interrupt_handler_2
+interrupt_handler_2:
+    pusha
+    call ex_nmi
+    popa
+    iret
+
+global interrupt_handler_3
+interrupt_handler_3:
+    pusha
+    call ex_breakpoint
+    popa
+    iret
+
+global interrupt_handler_4
+interrupt_handler_4:
+    pusha
+    call ex_overflow
+    popa
+    iret
+
+global interrupt_handler_5
+interrupt_handler_5:
+    pusha
+    call ex_bound_range
+    popa
+    iret
+
+global interrupt_handler_6
+interrupt_handler_6:
+    pusha
+    call ex_invalid_opcode
+    popa
+    iret
+
+global interrupt_handler_7
+interrupt_handler_7:
+    pusha
+    call ex_device_not_available
+    popa
+    iret
+
+global interrupt_handler_8
+interrupt_handler_8:
+    pusha
+    call ex_double_fault
+    popa
+    iret
+
+global interrupt_handler_9
+interrupt_handler_9:
+    pusha
+    call ex_coprocesser_segment_overrun
+    popa
+    iret
+
+global interrupt_handler_10
+interrupt_handler_10:
+    pusha
+    call ex_invalid_tss
+    popa
+    iret
+
+global interrupt_handler_11
+interrupt_handler_11:
+    pusha
+    call ex_segment_not_present
+    popa
+    iret
+
+global interrupt_handler_12
+interrupt_handler_12:
+    pusha
+    call ex_stack_segment_fault
+    popa
+    iret
+
+global interrupt_handler_13
+interrupt_handler_13:
+    pusha
+    call ex_gpf
+    popa
+    iret
+
+global interrupt_handler_14
+interrupt_handler_14:
+    pusha
+    call ex_page_fault
+    popa
+    iret
+
+global interrupt_handler_15
+interrupt_handler_15:
+    pusha
+    call ex_reserved
+    popa
+    iret
 
 irq_interrupt_handler 32, 0
 irq_interrupt_handler 33, 1
@@ -48,26 +188,7 @@ irq_interrupt_handler 45, 13
 irq_interrupt_handler 46, 14
 irq_interrupt_handler 47, 15
 
-error_interrupt_handler 7
-error_interrupt_handler 9
-error_interrupt_handler 10
-error_interrupt_handler 11
-error_interrupt_handler 12
-error_interrupt_handler 13
 error_interrupt_handler 16
-
-no_error_interrupt_handler 0
-no_error_interrupt_handler 1
-no_error_interrupt_handler 2
-no_error_interrupt_handler 3
-no_error_interrupt_handler 4
-no_error_interrupt_handler 5
-no_error_interrupt_handler 6
-
-no_error_interrupt_handler 8
-
-no_error_interrupt_handler 14
-no_error_interrupt_handler 15
 
 no_error_interrupt_handler 17
 no_error_interrupt_handler 18
@@ -164,132 +285,4 @@ no_error_interrupt_handler 123
 no_error_interrupt_handler 124
 no_error_interrupt_handler 125
 no_error_interrupt_handler 126
-no_error_interrupt_handler 127
-no_error_interrupt_handler 128
-no_error_interrupt_handler 129
-no_error_interrupt_handler 130
-no_error_interrupt_handler 131
-no_error_interrupt_handler 132
-no_error_interrupt_handler 133
-no_error_interrupt_handler 134
-no_error_interrupt_handler 135
-no_error_interrupt_handler 136
-no_error_interrupt_handler 137
-no_error_interrupt_handler 138
-no_error_interrupt_handler 139
-no_error_interrupt_handler 140
-no_error_interrupt_handler 141
-no_error_interrupt_handler 142
-no_error_interrupt_handler 143
-no_error_interrupt_handler 144
-no_error_interrupt_handler 145
-no_error_interrupt_handler 146
-no_error_interrupt_handler 147
-no_error_interrupt_handler 148
-no_error_interrupt_handler 149
-no_error_interrupt_handler 150
-no_error_interrupt_handler 151
-no_error_interrupt_handler 152
-no_error_interrupt_handler 153
-no_error_interrupt_handler 154
-no_error_interrupt_handler 155
-no_error_interrupt_handler 156
-no_error_interrupt_handler 157
-no_error_interrupt_handler 158
-no_error_interrupt_handler 159
-no_error_interrupt_handler 160
-no_error_interrupt_handler 161
-no_error_interrupt_handler 162
-no_error_interrupt_handler 163
-no_error_interrupt_handler 164
-no_error_interrupt_handler 165
-no_error_interrupt_handler 166
-no_error_interrupt_handler 167
-no_error_interrupt_handler 168
-no_error_interrupt_handler 169
-no_error_interrupt_handler 170
-no_error_interrupt_handler 171
-no_error_interrupt_handler 172
-no_error_interrupt_handler 173
-no_error_interrupt_handler 174
-no_error_interrupt_handler 175
-no_error_interrupt_handler 176
-no_error_interrupt_handler 177
-no_error_interrupt_handler 178
-no_error_interrupt_handler 179
-no_error_interrupt_handler 180
-no_error_interrupt_handler 181
-no_error_interrupt_handler 182
-no_error_interrupt_handler 183
-no_error_interrupt_handler 184
-no_error_interrupt_handler 185
-no_error_interrupt_handler 186
-no_error_interrupt_handler 187
-no_error_interrupt_handler 188
-no_error_interrupt_handler 189
-no_error_interrupt_handler 190
-no_error_interrupt_handler 191
-no_error_interrupt_handler 192
-no_error_interrupt_handler 193
-no_error_interrupt_handler 194
-no_error_interrupt_handler 195
-no_error_interrupt_handler 196
-no_error_interrupt_handler 197
-no_error_interrupt_handler 198
-no_error_interrupt_handler 199
-no_error_interrupt_handler 200
-no_error_interrupt_handler 201
-no_error_interrupt_handler 202
-no_error_interrupt_handler 203
-no_error_interrupt_handler 204
-no_error_interrupt_handler 205
-no_error_interrupt_handler 206
-no_error_interrupt_handler 207
-no_error_interrupt_handler 208
-no_error_interrupt_handler 209
-no_error_interrupt_handler 210
-no_error_interrupt_handler 211
-no_error_interrupt_handler 212
-no_error_interrupt_handler 213
-no_error_interrupt_handler 214
-no_error_interrupt_handler 215
-no_error_interrupt_handler 216
-no_error_interrupt_handler 217
-no_error_interrupt_handler 218
-no_error_interrupt_handler 219
-no_error_interrupt_handler 220
-no_error_interrupt_handler 221
-no_error_interrupt_handler 222
-no_error_interrupt_handler 223
-no_error_interrupt_handler 224
-no_error_interrupt_handler 225
-no_error_interrupt_handler 226
-no_error_interrupt_handler 227
-no_error_interrupt_handler 228
-no_error_interrupt_handler 229
-no_error_interrupt_handler 230
-no_error_interrupt_handler 231
-no_error_interrupt_handler 232
-no_error_interrupt_handler 233
-no_error_interrupt_handler 234
-no_error_interrupt_handler 235
-no_error_interrupt_handler 236
-no_error_interrupt_handler 237
-no_error_interrupt_handler 238
-no_error_interrupt_handler 239
-no_error_interrupt_handler 240
-no_error_interrupt_handler 241
-no_error_interrupt_handler 242
-no_error_interrupt_handler 243
-no_error_interrupt_handler 244
-no_error_interrupt_handler 245
-no_error_interrupt_handler 246
-no_error_interrupt_handler 247
-no_error_interrupt_handler 248
-no_error_interrupt_handler 249
-no_error_interrupt_handler 250
-no_error_interrupt_handler 251
-no_error_interrupt_handler 252
-no_error_interrupt_handler 253
-no_error_interrupt_handler 254
-no_error_interrupt_handler 255
+;no_error_interrupt_handler 127

@@ -52,3 +52,5 @@ struct TSS
     uint16_t reserved11;
     uint16_t o_iopb;
 } __attribute__((packed));
+
+void tss_reload();

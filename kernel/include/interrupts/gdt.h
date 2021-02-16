@@ -28,7 +28,7 @@ struct GDTDescriptor
 extern void gdt_load(GDTHeader gh);
 extern void gdt_reload_cs();
 
-void gdt_init(GDTHeader* gh, uint8_t* a, TaskManager* tm);
+void gdt_init(GDTHeader* gh, uint8_t* a, TSS* tm);
 void gdt_create_descriptor(GDTDescriptor* gd, uint32_t base, uint32_t limit, uint8_t accessed, uint8_t present, uint8_t privilege, uint8_t type, uint8_t executable, uint8_t dir_conf, uint8_t read_write);
 void gdt_add_entry(GDTHeader* gh, GDTDescriptor d);
 

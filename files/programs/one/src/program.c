@@ -1,4 +1,6 @@
+extern print(char* text, unsigned int length);
+
 int main()
 {
-    //return 0;
+    print("asdfasdfasdf", 12);
 }

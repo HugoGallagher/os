@@ -3,7 +3,7 @@
 #include "tasks/tasks.h"
 #include "interface/terminal.h"
 
-void gdt_init(GDTHeader* gh, uint8_t* a, TaskManager* tm)
+void gdt_init(GDTHeader* gh, uint8_t* a, TSS* tss)
 {
     gh->addr = a;
     gh->size = 0;
@@ -25,7 +25,7 @@ void gdt_init(GDTHeader* gh, uint8_t* a, TaskManager* tm)
     gdt_create_descriptor(&u_data_d, 0, 0xFFFFFFFF, 0, 1, 3, 1, 0, 0, 1);
 
     GDTDescriptor tss_d;
-    gdt_create_descriptor(&tss_d, tm->tss, sizeof(TSS), 1, 1, 0, 0, 0, 0, 0);
+    gdt_create_descriptor(&tss_d, tss, tss + sizeof(TSS) - 1, 1, 1, 0, 0, 1, 0, 0);
     tss_d.limit_high_flags &= 0x0F;
 
     gdt_add_entry(gh, null_d);

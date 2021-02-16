@@ -24,27 +24,27 @@ void kmain(multiboot_info_t* mbi)
 
     terminal_initialize();
 
-//    terminal_writestring("Initialising page frames\n");
+    terminal_writestring("Initialising page frames\n");
     void* heap_start = pa_init(kernel_end, mbi);
 
-//    terminal_writestring("Initialising heap\n");
+    terminal_writestring("Initialising heap\n");
     kheap_init(heap_start);
 
     void* p_gdt = kmalloc(64);
-    void* p_idt = kmalloc(2048);
+    void* p_idt = kmalloc(1024);
     //void* p_idt = 0xC0000000;
 
-//    terminal_writestring("Initialising GDT\n");
-    TaskManager* task_manager = kmalloc(sizeof(TaskManager));
-    //tm_init(task_manager, 64);
+    terminal_writestring("Initialising GDT\n");
+    tm_init(64);
 
     GDTHeader gdt_h;
-    gdt_init(&gdt_h, p_gdt, &task_manager);
+    gdt_init(&gdt_h, p_gdt, tm_get_tss());
     gdt_load(gdt_h);
     gdt_reload_cs();
-    tss_reload();
+    tss_load();
+    //tss_load();
 
-//    terminal_writestring("Initialising IDT\n");
+    terminal_writestring("Initialising IDT\n");
     IDTHeader idt_h;
     idt_h.size = 2047;
     idt_h.descriptors = p_idt;
@@ -64,12 +64,8 @@ void kmain(multiboot_info_t* mbi)
     FAT32FS fat32fs;
     fat32_init(&fat32fs, partition);
 
-    //tsk_init(task_manager->tasks + 0, task_manager, 512, &fat32fs, "programs/one/program.bin", 24);
-
-//    terminal_write(file, 24);
-
-//    program_func test = file;
-//    test();
+    uint16_t id = tm_create_task(&fat32fs, "programs/one/program.bin", 24);
+    tm_enter_task(&fat32fs, id);
 
     terminal_writestring("Works!\n");
 

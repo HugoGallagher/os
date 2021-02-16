@@ -75,4 +75,4 @@ bool pte_get_flag(PageTableEntry* pte, enum pte_flags f);
 void pte_set_addr(PageTableEntry* pte, void* addr);
 void* pte_get_addr(PageTableEntry* pte);
 
-void pg_load_cr3(PageDirectory* pd);
+void pg_load_pd(PageDirectory* pd);
