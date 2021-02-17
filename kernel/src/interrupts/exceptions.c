@@ -60,6 +60,7 @@ void ex_page_fault(uint32_t code)
 {
     terminal_writestring("Page fault occurred\n");
     terminal_writehex(get_cr2());
+    asm("cli"); asm("hlt");
 }
 void ex_reserved()
 {

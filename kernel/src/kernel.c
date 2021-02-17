@@ -32,17 +32,16 @@ void kmain(multiboot_info_t* mbi)
 
     void* p_gdt = kmalloc(64);
     void* p_idt = kmalloc(1024);
-    //void* p_idt = 0xC0000000;
 
     terminal_writestring("Initialising GDT\n");
-    tm_init(64);
+    //tm_init(64);
+    tm_init(4);
 
     GDTHeader gdt_h;
     gdt_init(&gdt_h, p_gdt, tm_get_tss());
     gdt_load(gdt_h);
     gdt_reload_cs();
     tss_load();
-    //tss_load();
 
     terminal_writestring("Initialising IDT\n");
     IDTHeader idt_h;
@@ -64,10 +63,9 @@ void kmain(multiboot_info_t* mbi)
     FAT32FS fat32fs;
     fat32_init(&fat32fs, partition);
 
-    uint16_t id = tm_create_task(&fat32fs, "programs/one/program.bin", 24);
-    tm_enter_task(&fat32fs, id);
-
-    terminal_writestring("Works!\n");
+    tm_create_task(&fat32fs, "programs/one/program.bin", 24);
+    tm_create_task(&fat32fs, "programs/two/program.bin", 24);
+    tm_enter_task(0);
 
     kernel_loop();
 }

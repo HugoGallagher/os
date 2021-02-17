@@ -20,6 +20,8 @@ pd_boot:
     resb 0x1000
 pt_tasks:
     resb 0x1000
+pt_buses:
+    resb 0x1000
 pt_boot:
     resb KERNEL_PAGES * 0x1000
 
@@ -84,10 +86,15 @@ l5:
     mov ebx, pd_boot - 0xC0000000 + 0x003
     mov [eax+1023*4], ebx
 
-    ; 2nd-past pde is for task information
+    ; 2nd-last pde is for task information
     mov eax, pd_boot - 0xC0000000
     mov ebx, pt_tasks - 0xC0000000 + 0x003
     mov [eax+1022*4], ebx
+
+    ; 3rd-last pde is for message buses
+    mov eax, pd_boot - 0xC0000000
+    mov ebx, pt_buses - 0xC0000000 + 0x003
+    mov [eax+1021*4], ebx
 
     mov eax, pd_boot - 0xC0000000
     mov cr3, eax

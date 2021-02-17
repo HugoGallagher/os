@@ -33,17 +33,44 @@ void tm_init(uint16_t c)
     ta_init(c);
 }
 
-void tm_enter_task(FAT32FS* fs, uint16_t id)
+void tm_enter_next_task()
+{
+    uint16_t iterated = 0;
+    uint16_t index = task_manager.current_task;
+    while (iterated < task_manager.count)
+    {
+        index++;
+        if (index >= task_manager.count)
+        index = 0;
+
+        uint16_t i_pd = (index & 0b11111) >> 5;
+        uint16_t i_b = index % 32;
+
+        if (task_manager.task_bitmaps[i_pd] & 1 << i_b)
+        {
+            task_manager.current_task = index;
+            tm_enter_task(index);
+        }
+
+        iterated++;
+    }
+
+//    terminal_writestring("No active tasks!\n");
+    asm("cli"); asm("hlt");
+}
+void tm_enter_task(uint16_t id)
 {
     memcpy(&(task_manager.tasks[id].page_dir->entries[768]), &(task_manager.k_page_dir->entries[768]), sizeof(PageTableEntry) * (1024 - 768));
 
     task_manager.tss->esp0 = 1022 * (4*1024*1024) + id * 4096 + 4092;
     task_manager.tss->cr3 = pg_get_phys_addr(task_manager.tasks[id].page_dir);
+    task_manager.current_task = id;
 
     pg_load_pd(task_manager.tasks[id].page_dir);
     task_manager.tasks[id].registers.esp_temp = get_esp();
     enter_usr(task_manager.tasks[id].registers);
 }
+
 uint16_t tm_create_task(FAT32FS* fs, char* path, uint32_t path_size)
 {
     uint16_t c_aligned = task_manager.count + 31;
@@ -76,19 +103,133 @@ uint16_t tm_create_task(FAT32FS* fs, char* path, uint32_t path_size)
         return;
     }
 
-    tsk_init(task_manager.tasks + id, id, fs, "programs/one/program.bin", 24);
+    tsk_init(task_manager.tasks + id, id, fs, path, path_size);
 
     return id;
 }
-
-void tm_syscall(uint32_t index)
+void tm_delete_active_task()
 {
-    //syscalls[index]();
+    uint16_t id = task_manager.current_task;
+    Task* t = task_manager.tasks + id;
+
+    uint16_t b_i = (id & ~0b11111) >> 5;
+    uint16_t b_b = id % 32;
+
+    task_manager.task_bitmaps[b_i] &= ~(1 << b_b);
+    ta_free(id);
+    ta_free_pd(id);
+
+    PageTableEntry* ks_pte = pg_get_pte(1022, id);
+    pa_free(ks_pte->data & 0xFFFFF000);
+    //ks_pte->data = 0;
+    PageTableEntry* mb_pte = pg_get_pte(1021, id);
+    pa_free(mb_pte->data & 0xFFFFF000);
+    //mb_pte->data = 0;
+
+    uint32_t tables_needed = t->size - 1;
+    tables_needed += (1024*1024) - (tables_needed % (1024*1024));
+    tables_needed /= (1024*1024);
+
+
+    for (uint32_t i = 0; i < (tables_needed - 1); i++)
+    {
+        PageTable* p_pt = pg_get_pde(i);
+
+        for (uint32_t j = 0; j < 1024; j++)
+        {
+            uint32_t addr = p_pt->entries[j].data & 0xFFFFF000;
+            pa_free(addr);
+            p_pt->entries[j].data = 0;
+        }
+        t->page_dir->entries[i].data = 0;
+    }
+
+    PageTable* p_pt = pg_get_pde(tables_needed - 1);
+
+    uint32_t last_entries = t->size % 1024;
+    if (!t->size)
+        last_entries = 1024;
+
+    for (uint32_t j = 0; j < last_entries; j++)
+    {
+        uint32_t addr = p_pt->entries[j].data & 0xFFFFF000;
+        pa_free(addr);
+        p_pt->entries[j].data = 0;
+    }
+    t->page_dir->entries[tables_needed - 1].data = 0;
+
+    for (uint16_t i = 0; i < 1024; i++)
+    {
+        uint32_t addr = t->pt_stack->entries[i].data & 0xFFFFF000;
+        pa_free(addr);
+        t->pt_stack->entries[i].data = 0;
+    }
+    t->page_dir->entries[767].data = 0;
+    uint32_t index = t->pt_stack - task_manager.task_allocs.pts;
+    ta_free(index);
+    t->pt_stack = 0;
+
+
+    tm_enter_next_task();
 }
 
-TSS* tm_get_tss()
+void tm_msg_transmit(uint32_t dst, uint8_t* data, uint32_t len)
 {
-    return task_manager.tss;
+    //MessageBus* msg_bus = 1021 * (4096*1024) + task_manager.current_task * 4096;
+    MessageBus* msg_bus = 1021 * (4096*1024) + dst * 4096;
+
+    uint32_t offset = 0;
+    uint32_t index = 0;
+    for (uint32_t i = 0; i < 64; i++)
+    {
+        if (msg_bus->lengths[i] == 0)
+            break;
+
+        index = i;
+        offset += msg_bus->lengths[i];
+    }
+    memcpy(msg_bus->data + offset, data, len);
+    msg_bus->lengths[index] = len;
+}
+void tm_msg_get(uint8_t** p_data, uint32_t* p_len)
+{
+    MessageBus* msg_bus = 1021 * (4096*1024) + task_manager.current_task * 4096;
+
+    if (msg_bus->lengths[0] == 0)
+        return;
+
+    uint32_t offset = 0;
+    uint32_t index = 0;
+    for (uint32_t i = 0; i < 64; i++)
+    {
+        index = i;
+        if (msg_bus->lengths[i] == 0)
+            break;
+
+        offset += msg_bus->lengths[i];
+    }
+    index--;
+    offset -= msg_bus->lengths[index];
+
+    *p_data = msg_bus->data;
+    *p_len = msg_bus->lengths[index];
+}
+void tm_msg_ack()
+{
+    MessageBus* msg_bus = 1021 * (4096*1024) + task_manager.current_task * 4096;
+
+    uint32_t offset = 0;
+    uint32_t index = 0;
+    for (uint32_t i = 0; i < 64; i++)
+    {
+        if (msg_bus->lengths[i] == 0)
+            break;
+
+        index = i;
+        offset += msg_bus->lengths[i];
+    }
+    //bzero(msg_bus->data + offset, msg_bus->lengths[index]);
+    msg_bus->lengths[index] = 0;
 }
 
 void tsk_init(Task* t, uint16_t id, FAT32FS* fs, char* path, uint32_t path_size)
@@ -98,6 +239,7 @@ void tsk_init(Task* t, uint16_t id, FAT32FS* fs, char* path, uint32_t path_size)
     memcpy(&(t->page_dir->entries[768]), &(task_manager.k_page_dir->entries[768]), sizeof(PageTableEntry) * (1024 - 768));
 
     t->pcid = id;
+    t->fs = fs;
 
     t->registers.eax = 0;
     t->registers.ecx = 0;
@@ -109,17 +251,28 @@ void tsk_init(Task* t, uint16_t id, FAT32FS* fs, char* path, uint32_t path_size)
     t->registers.edi = 0;
     t->registers.flags = get_flags();
     t->registers.eip = 0;
-    t->registers.esp = 0xBFFFEFFB;
+    t->registers.esp = 0xBFFFFFFB;
 
-    // find a 4kb block and assign it as the kernel stack for the task;
+    // find 2 4kb blocks and assign them as the kernel stack and message bus
     uint32_t kernel_stack = pa_alloc();
     PageTableEntry* ks_pte = pg_get_pte(1022, id);
     ks_pte->data = kernel_stack + (1 << 0) + (1 << 1);
+    uint32_t message_bus = pa_alloc();
+    PageTableEntry* mb_pte = pg_get_pte(1021, id);
+    mb_pte->data = message_bus + (1 << 0) + (1 << 1) + (1 << 2);
 
     FAT32DirEntry file_info = fat32_get_file_info(fs, path, path_size);
 
     uint32_t s;
     s = file_info.size;
+
+    t->size = s;
+
+    if (s == 0)
+    {
+        terminal_writestring("Invalid program\n");
+        return;
+    }
 
     uint32_t tables_needed = s - 1;
     tables_needed += (1024*1024) - (tables_needed % (1024*1024));
@@ -137,27 +290,24 @@ void tsk_init(Task* t, uint16_t id, FAT32FS* fs, char* path, uint32_t path_size)
         }
     }
     // now partially allocate last page table
-    if (tables_needed > 0)
+    PageTable* p_pt = ta_alloc();
+    t->page_dir->entries[tables_needed - 1].data = pg_get_phys_addr(p_pt) + (1 << 0 | 1 << 1 | 1 << 2);
+
+    // if s is 1024-aligned
+    uint32_t last_entries = s % 1024;
+    if (!s)
+        last_entries = 1024;
+
+    for (uint32_t j = 0; j < last_entries; j++)
     {
-        PageTable* p_pt = ta_alloc();
-        t->page_dir->entries[tables_needed - 1].data = pg_get_phys_addr(p_pt) + (1 << 0 | 1 << 1 | 1 << 2);
-
-        // if s is 1024-aligned
-        uint32_t last_entries = s % 1024;
-        if (!s)
-            last_entries = 1024;
-
-        for (uint32_t j = 0; j < last_entries; j++)
-        {
-            p_pt->entries[tables_needed - 1].data = pa_alloc() | (1 << 0 | 1 << 1 | 1 << 2);
-        }
+        p_pt->entries[tables_needed - 1].data = pa_alloc() | (1 << 0 | 1 << 1 | 1 << 2);
     }
     // map pt 767 as the tasks stack
-    PageTable* ts_pt = ta_alloc();
-    t->page_dir->entries[767].data = pg_get_phys_addr(ts_pt) + (1 << 0 | 1 << 1 | 1 << 2);
+    t->pt_stack = ta_alloc();
+    t->page_dir->entries[767].data = pg_get_phys_addr(t->pt_stack) + (1 << 0 | 1 << 1 | 1 << 2);
     for (uint16_t i = 0; i < 1024; i++)
     {
-        ts_pt->entries[i].data = pa_alloc() | (1 << 0 | 1 << 1 | 1 << 2);
+        t->pt_stack->entries[i].data = pa_alloc() | (1 << 0 | 1 << 1 | 1 << 2);
     }
 
     // if this is callable while multitasking a lock should be used
@@ -167,7 +317,11 @@ void tsk_init(Task* t, uint16_t id, FAT32FS* fs, char* path, uint32_t path_size)
     fat32_read(fs, 0x0, path, path_size);
 
     pg_load_pd(task_manager.k_page_dir->entries);
+}
 
+TSS* tm_get_tss()
+{
+    return task_manager.tss;
 }
 
 void ta_init(uint32_t c)
@@ -305,8 +459,8 @@ PageDirectory* ta_alloc_pd()
 }
 void ta_free_pd(uint32_t index)
 {
-    uint32_t i_pd = index >> 5;
-    index &= 0b11111;
+    uint32_t i_pd = (index & 0b11111) >> 5;
+    index %= 32;
 
     if (task_manager.task_allocs.pd_b[i_pd] & 1 << index)
         return;

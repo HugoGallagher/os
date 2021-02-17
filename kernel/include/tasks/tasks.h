@@ -8,28 +8,37 @@
 
 #include "files/fat32.h"
 
+struct MessageBus;
 struct Registers;
 
 struct Task;
 struct TaskAllocater;
 struct TaskManager;
 
+typedef struct MessageBus MessageBus;
 typedef struct Registers Registers;
 
 typedef struct Task Task;
 typedef struct TaskAllocater TaskAllocater;
 typedef struct TaskManager TaskManager;
 
+// messages are stored in a stack-like structure
+struct MessageBus
+{
+    uint16_t lengths[64];
+    uint8_t data[3968];
+} __attribute__((packed));
+
 struct Registers
 {
-    uint32_t eax;
-    uint32_t ecx;
-    uint32_t edx;
-    uint32_t ebx;
-    uint32_t ebp;
-    uint32_t esp_temp;
-    uint32_t esi;
     uint32_t edi;
+    uint32_t esi;
+    uint32_t esp_temp;
+    uint32_t ebp;
+    uint32_t ebx;
+    uint32_t edx;
+    uint32_t ecx;
+    uint32_t eax;
 
     uint32_t flags;
 
@@ -47,8 +56,12 @@ struct Task
     uint16_t pcid;
 
     PageDirectory* page_dir;
-
     Registers registers;
+
+    uint32_t size;
+    PageTable* pt_stack;
+
+    FAT32FS* fs;
 
     // if the task was preempted while in pl0
     bool in_pl0;
@@ -73,6 +86,7 @@ struct TaskManager
 
     Task* tasks;
     uint16_t count;
+    uint16_t current_task;
 
     TaskAllocater task_allocs;
 
@@ -83,10 +97,15 @@ static TaskManager task_manager;
 
 void tm_init(uint16_t c);
 
-void tm_switch_task(FAT32FS* fs, uint16_t id);
-uint16_t tm_create_task(FAT32FS* fs, char* path, uint32_t path_size);
+void tm_enter_next_task();
+void tm_enter_task(uint16_t id);
 
-void tm_syscall(uint32_t index);
+uint16_t tm_create_task(FAT32FS* fs, char* path, uint32_t path_size);
+void tm_delete_active_task();
+
+void tm_msg_transmit(uint32_t dst, uint8_t* data, uint32_t len);
+void tm_msg_get(uint8_t** p_data, uint32_t* len);
+void tm_msg_ack();
 
 void tm_update_kpd();
 
