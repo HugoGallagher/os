@@ -1,10 +1,21 @@
 #include "lib.h"
 
+extern void asm_exit();
+extern void asm_yield();
 extern void asm_msg_send(uint32_t dst, uint8_t* data, uint32_t len);
 extern void asm_msg_get(uint8_t** p_data, uint32_t* p_len);
 extern void asm_msg_ack();
 extern void asm_print(char* text, uint32_t length);
+extern void asm_print_hex(uint32_t num);
 
+void exit()
+{
+    asm_exit();
+}
+void yield()
+{
+    asm_yield();
+}
 void msg_send(uint32_t dst, uint8_t* data, uint32_t len)
 {
     asm_msg_send(dst, data, len);
@@ -20,4 +31,8 @@ void msg_ack()
 void print(char* text, uint32_t length)
 {
     asm_print(text, length);
+}
+void print_hex(uint32_t num)
+{
+    asm_print_hex(num);
 }

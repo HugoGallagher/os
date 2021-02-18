@@ -55,7 +55,7 @@ void tm_enter_next_task()
         iterated++;
     }
 
-//    terminal_writestring("No active tasks!\n");
+    terminal_writestring("No active tasks!\n");
     asm("cli"); asm("hlt");
 }
 void tm_enter_task(uint16_t id)
@@ -66,6 +66,7 @@ void tm_enter_task(uint16_t id)
     task_manager.tss->cr3 = pg_get_phys_addr(task_manager.tasks[id].page_dir);
     task_manager.current_task = id;
 
+    task_manager.tasks[id].registers.esp = task_manager.tasks[id].registers.esp_temp;
     pg_load_pd(task_manager.tasks[id].page_dir);
     task_manager.tasks[id].registers.esp_temp = get_esp();
     enter_usr(task_manager.tasks[id].registers);
@@ -119,56 +120,16 @@ void tm_delete_active_task()
     ta_free(id);
     ta_free_pd(id);
 
-    PageTableEntry* ks_pte = pg_get_pte(1022, id);
-    pa_free(ks_pte->data & 0xFFFFF000);
-    //ks_pte->data = 0;
-    PageTableEntry* mb_pte = pg_get_pte(1021, id);
-    pa_free(mb_pte->data & 0xFFFFF000);
-    //mb_pte->data = 0;
-
-    uint32_t tables_needed = t->size - 1;
-    tables_needed += (1024*1024) - (tables_needed % (1024*1024));
-    tables_needed /= (1024*1024);
-
-
-    for (uint32_t i = 0; i < (tables_needed - 1); i++)
-    {
-        PageTable* p_pt = pg_get_pde(i);
-
-        for (uint32_t j = 0; j < 1024; j++)
-        {
-            uint32_t addr = p_pt->entries[j].data & 0xFFFFF000;
-            pa_free(addr);
-            p_pt->entries[j].data = 0;
-        }
-        t->page_dir->entries[i].data = 0;
-    }
-
-    PageTable* p_pt = pg_get_pde(tables_needed - 1);
-
-    uint32_t last_entries = t->size % 1024;
-    if (!t->size)
-        last_entries = 1024;
-
-    for (uint32_t j = 0; j < last_entries; j++)
-    {
-        uint32_t addr = p_pt->entries[j].data & 0xFFFFF000;
-        pa_free(addr);
-        p_pt->entries[j].data = 0;
-    }
-    t->page_dir->entries[tables_needed - 1].data = 0;
-
-    for (uint16_t i = 0; i < 1024; i++)
-    {
-        uint32_t addr = t->pt_stack->entries[i].data & 0xFFFFF000;
-        pa_free(addr);
-        t->pt_stack->entries[i].data = 0;
-    }
-    t->page_dir->entries[767].data = 0;
-    uint32_t index = t->pt_stack - task_manager.task_allocs.pts;
-    ta_free(index);
-    t->pt_stack = 0;
-
+    t->registers.eax = 0;
+    t->registers.ecx = 0;
+    t->registers.edx = 0;
+    t->registers.ebx = 0;
+    t->registers.ebp = 0;
+    t->registers.esp_temp = 0xBFFFFFFB;
+    t->registers.esi = 0;
+    t->registers.edi = 0;
+    t->registers.eip = 0;
+    t->registers.esp = 0xBFFFFFFB;
 
     tm_enter_next_task();
 }
@@ -246,7 +207,7 @@ void tsk_init(Task* t, uint16_t id, FAT32FS* fs, char* path, uint32_t path_size)
     t->registers.edx = 0;
     t->registers.ebx = 0;
     t->registers.ebp = 0;
-    t->registers.esp_temp = 0;
+    t->registers.esp_temp = 0xBFFFFFFB;
     t->registers.esi = 0;
     t->registers.edi = 0;
     t->registers.flags = get_flags();
@@ -317,6 +278,23 @@ void tsk_init(Task* t, uint16_t id, FAT32FS* fs, char* path, uint32_t path_size)
     fat32_read(fs, 0x0, path, path_size);
 
     pg_load_pd(task_manager.k_page_dir->entries);
+}
+
+void tm_save_registers(GeneralRegisters r, uint32_t eip, uint32_t esp)
+{
+    task_manager.tasks[task_manager.current_task].registers.eax = r.eax;
+    task_manager.tasks[task_manager.current_task].registers.ebx = r.ebx;
+    task_manager.tasks[task_manager.current_task].registers.ecx = r.ecx;
+    task_manager.tasks[task_manager.current_task].registers.edx = r.edx;
+    task_manager.tasks[task_manager.current_task].registers.ebp = r.ebp;
+    task_manager.tasks[task_manager.current_task].registers.esi = r.esi;
+    task_manager.tasks[task_manager.current_task].registers.edi = r.edi;
+
+    task_manager.tasks[task_manager.current_task].registers.esp_temp = esp;
+    task_manager.tasks[task_manager.current_task].registers.eip = eip;
+
+//    terminal_writehex(task_manager.tasks[task_manager.current_task].registers.esp_temp);
+//    terminal_writehex(task_manager.tasks[task_manager.current_task].registers.eip);
 }
 
 TSS* tm_get_tss()
@@ -462,7 +440,7 @@ void ta_free_pd(uint32_t index)
     uint32_t i_pd = (index & 0b11111) >> 5;
     index %= 32;
 
-    if (task_manager.task_allocs.pd_b[i_pd] & 1 << index)
+    if (!(task_manager.task_allocs.pd_b[i_pd] & 1 << index))
         return;
 
     task_manager.task_allocs.pd_b[i_pd] ^= 1 << index;

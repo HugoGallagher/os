@@ -3,6 +3,7 @@
 #include <stdbool.h>
 
 #include "tasks/tss.h"
+#include "interrupts/idt.h"
 #include "mem/paging.h"
 #include "lib/bitmap.h"
 
@@ -107,7 +108,7 @@ void tm_msg_transmit(uint32_t dst, uint8_t* data, uint32_t len);
 void tm_msg_get(uint8_t** p_data, uint32_t* len);
 void tm_msg_ack();
 
-void tm_update_kpd();
+void tm_save_registers(GeneralRegisters r, uint32_t eip, uint32_t esp);
 
 TSS* tm_get_tss();
 
@@ -122,5 +123,8 @@ void ta_free_pd(uint32_t index);
 void enter_usr(Registers r);
 void set_usr_srs();
 void exit_usr(Registers rs);
+
+uint32_t get_eip();
 uint32_t get_flags();
 uint32_t get_esp();
+uint32_t get_cr2();
