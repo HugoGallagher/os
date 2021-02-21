@@ -1,5 +1,3 @@
-extern terminal_writehex
-
 global ata_read_buffer
 global ata_poll
 global ata_identify
@@ -80,9 +78,4 @@ poll_status_final:
     ret
 
 drive_error:
-    mov eax, 0x1234
-    push eax
-    call terminal_writehex
-    pop eax
-
     ret

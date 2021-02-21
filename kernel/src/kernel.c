@@ -63,9 +63,11 @@ void kmain(multiboot_info_t* mbi)
     FAT32FS fat32fs;
     fat32_init(&fat32fs, partition);
 
-    tm_create_task(&fat32fs, "programs/one/program.bin", 24);
-    tm_create_task(&fat32fs, "programs/one/program.bin", 24);
-    tm_enter_task(0);
+    tm_init_servers(&fat32fs, "boot/servers.txt", 16);
+
+    tm_create_task(&fat32fs, false, "programs/one/program.bin", 24);
+    tm_create_task(&fat32fs, false, "programs/two/program.bin", 24);
+//    tm_enter_next_task();
 
     kernel_loop();
 }

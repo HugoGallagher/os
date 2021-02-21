@@ -9,6 +9,14 @@
 
 #include "files/fat32.h"
 
+// soft limit of 10 servers
+#define SERVER_COUNT 2
+enum SERVERS
+{
+    SV_GRAPHICS,
+    SV_FILESYSTEM,
+};
+
 struct MessageBus;
 struct Registers;
 
@@ -86,22 +94,27 @@ struct TaskManager
     TSS* tss;
 
     Task* tasks;
+    Task* servers[SERVER_COUNT];
     uint16_t count;
     uint16_t current_task;
 
     TaskAllocater task_allocs;
 
     PageDirectory* k_page_dir;
+
+    bool multitasking;
 };
 
 static TaskManager task_manager;
 
 void tm_init(uint16_t c);
 
+void tm_init_servers(FAT32FS* fs, char* path, uint32_t path_size);
+
 void tm_enter_next_task();
 void tm_enter_task(uint16_t id);
 
-uint16_t tm_create_task(FAT32FS* fs, char* path, uint32_t path_size);
+uint16_t tm_create_task(FAT32FS* fs, bool is_server, char* path, uint32_t path_size);
 void tm_delete_active_task();
 
 void tm_msg_transmit(uint32_t dst, uint8_t* data, uint32_t len);
@@ -110,9 +123,14 @@ void tm_msg_ack();
 
 void tm_save_registers(GeneralRegisters r, uint32_t eip, uint32_t esp);
 
-TSS* tm_get_tss();
+void tm_preempt_pl0(GeneralRegisters r, uint32_t eip, uint16_t cs, uint32_t f);
+void tm_preempt_pl3(GeneralRegisters r, uint32_t eip, uint16_t cs, uint32_t f, uint32_t esp, uint16_t ss);
 
-void tsk_init(Task* t, uint16_t id, FAT32FS* fs, char* path, uint32_t path_size);
+TSS* tm_get_tss();
+bool tm_is_multitasking();
+uint32_t tm_get_task_stack_base();
+
+void tsk_init(Task* t, uint16_t id, FAT32FS* fs, bool is_server, char* path, uint32_t path_size);
 
 void ta_init(uint32_t c);
 PageTable* ta_alloc();

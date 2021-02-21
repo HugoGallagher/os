@@ -33,12 +33,41 @@ void tm_init(uint16_t c)
     ta_init(c);
 }
 
+void tm_init_servers(FAT32FS* fs, char* path, uint32_t path_size)
+{
+    uint8_t* servers_info;
+    fat32_read(fs, servers_info, path, path_size);
+    terminal_write(servers_info, 64);
+    terminal_writestring("\n");
+
+    uint32_t o_current = 0;
+    uint32_t i = 0;
+    while (i < SERVER_COUNT)
+    {
+        uint32_t s_current = servers_info[o_current];
+
+        uint32_t o_start = o_current + 2;
+        uint32_t o_end = o_start;
+
+        while (servers_info[o_end] != 0xA)
+        {
+            o_end++;
+        }
+
+        tm_create_task(fs, true, servers_info + o_start, o_end - o_start);
+
+        o_current = o_end;
+        i++;
+    }
+}
+
 void tm_enter_next_task()
 {
     uint16_t iterated = 0;
     uint16_t index = task_manager.current_task;
     while (iterated < task_manager.count)
     {
+
         index++;
         if (index >= task_manager.count)
         index = 0;
@@ -60,6 +89,8 @@ void tm_enter_next_task()
 }
 void tm_enter_task(uint16_t id)
 {
+    task_manager.multitasking = true;
+
     memcpy(&(task_manager.tasks[id].page_dir->entries[768]), &(task_manager.k_page_dir->entries[768]), sizeof(PageTableEntry) * (1024 - 768));
 
     task_manager.tss->esp0 = 1022 * (4*1024*1024) + id * 4096 + 4092;
@@ -67,12 +98,17 @@ void tm_enter_task(uint16_t id)
     task_manager.current_task = id;
 
     task_manager.tasks[id].registers.esp = task_manager.tasks[id].registers.esp_temp;
-    pg_load_pd(task_manager.tasks[id].page_dir);
     task_manager.tasks[id].registers.esp_temp = get_esp();
-    enter_usr(task_manager.tasks[id].registers);
+
+    pg_load_pd(task_manager.tasks[id].page_dir);
+
+    if (task_manager.tasks[id].in_pl0)
+        enter_usr_pl0(task_manager.tasks[id].registers);
+    else
+        enter_usr_pl3(task_manager.tasks[id].registers);
 }
 
-uint16_t tm_create_task(FAT32FS* fs, char* path, uint32_t path_size)
+uint16_t tm_create_task(FAT32FS* fs, bool is_server, char* path, uint32_t path_size)
 {
     uint16_t c_aligned = task_manager.count + 31;
     c_aligned &= ~0b11111;
@@ -81,7 +117,7 @@ uint16_t tm_create_task(FAT32FS* fs, char* path, uint32_t path_size)
     bool slot_found = false;
     for (uint32_t i = 0; i < c_aligned; i++)
     {
-        if (~(task_manager.task_bitmaps[i]))
+        if (task_manager.task_bitmaps[i] != 0xFFFFFFFF)
         {
             for (uint32_t j = 0; j < 32; j++)
             {
@@ -104,7 +140,7 @@ uint16_t tm_create_task(FAT32FS* fs, char* path, uint32_t path_size)
         return;
     }
 
-    tsk_init(task_manager.tasks + id, id, fs, path, path_size);
+    tsk_init(task_manager.tasks + id, id, fs, is_server, path, path_size);
 
     return id;
 }
@@ -193,7 +229,7 @@ void tm_msg_ack()
     msg_bus->lengths[index] = 0;
 }
 
-void tsk_init(Task* t, uint16_t id, FAT32FS* fs, char* path, uint32_t path_size)
+void tsk_init(Task* t, uint16_t id, FAT32FS* fs, bool is_server, char* path, uint32_t path_size)
 {
     // copy the kernel page directory
     t->page_dir = ta_alloc_pd();
@@ -214,6 +250,9 @@ void tsk_init(Task* t, uint16_t id, FAT32FS* fs, char* path, uint32_t path_size)
     t->registers.eip = 0;
     t->registers.esp = 0xBFFFFFFB;
 
+    if (is_server)
+        t->registers.flags |= 0x3000;
+
     // find 2 4kb blocks and assign them as the kernel stack and message bus
     uint32_t kernel_stack = pa_alloc();
     PageTableEntry* ks_pte = pg_get_pte(1022, id);
@@ -221,6 +260,8 @@ void tsk_init(Task* t, uint16_t id, FAT32FS* fs, char* path, uint32_t path_size)
     uint32_t message_bus = pa_alloc();
     PageTableEntry* mb_pte = pg_get_pte(1021, id);
     mb_pte->data = message_bus + (1 << 0) + (1 << 1) + (1 << 2);
+
+    t->in_pl0 = false;
 
     FAT32DirEntry file_info = fat32_get_file_info(fs, path, path_size);
 
@@ -292,14 +333,43 @@ void tm_save_registers(GeneralRegisters r, uint32_t eip, uint32_t esp)
 
     task_manager.tasks[task_manager.current_task].registers.esp_temp = esp;
     task_manager.tasks[task_manager.current_task].registers.eip = eip;
+}
 
-//    terminal_writehex(task_manager.tasks[task_manager.current_task].registers.esp_temp);
-//    terminal_writehex(task_manager.tasks[task_manager.current_task].registers.eip);
+void tm_preempt_pl0(GeneralRegisters r, uint32_t eip, uint16_t cs, uint32_t f)
+{
+    task_manager.tasks[task_manager.current_task].in_pl0 = true;
+
+    // allocate some data temporarily for the stack
+    uint32_t new_esp = tm_get_task_stack_base() + 252;
+
+    tm_save_registers(r, eip, r.esp);
+    asm volatile("mov %%esp, %0" : : "r"(new_esp));
+
+    outb(0x20, 0x20);
+    asm("sti");
+    tm_enter_next_task();
+}
+void tm_preempt_pl3(GeneralRegisters r, uint32_t eip, uint16_t cs, uint32_t f, uint32_t esp, uint16_t ss)
+{
+    task_manager.tasks[task_manager.current_task].in_pl0 = false;
+    tm_save_registers(r, eip, esp);
+    outb(0x20, 0x20);
+    asm("sti");
+    tm_enter_next_task();
 }
 
 TSS* tm_get_tss()
 {
     return task_manager.tss;
+}
+
+bool tm_is_multitasking()
+{
+    return task_manager.multitasking;
+}
+uint32_t tm_get_task_stack_base()
+{
+    return 1022 * (4*1024*1024) + task_manager.current_task * 4096;
 }
 
 void ta_init(uint32_t c)

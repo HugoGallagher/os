@@ -1,5 +1,3 @@
-extern terminal_writehex
-
 extern idt_handle
 extern idt_handle_error
 
@@ -18,8 +16,6 @@ interrupt_handler_%1:
 global interrupt_handler_%1
 interrupt_handler_%1:
     pusha
-    push %1
-    call idt_handle_error
     popa
     iret
 %endmacro
@@ -33,6 +29,47 @@ interrupt_handler_%1:
     popa
     iret
 %endmacro
+
+global interrupt_handler_32
+extern tm_is_multitasking
+extern tm_get_task_stack_base
+
+extern tm_preempt_pl0
+extern tm_preempt_pl3
+interrupt_handler_32:
+    cli
+
+    push eax
+    mov eax, [esp+8]
+    test eax, 0x03
+    jne call_preemption_function_3
+
+    jmp call_preemption_function_0
+
+call_preemption_function_0:
+    add esp, 4
+    call tm_is_multitasking
+    cmp eax, 0
+    je return_to_pl0
+
+    pusha
+    call tm_preempt_pl0
+    popa
+    iret
+
+call_preemption_function_3:
+    pop eax
+    pusha
+    call tm_preempt_pl3
+    popa
+    iret
+
+return_to_pl0:
+    mov ax, 0x20
+    mov dx, 0x20
+    out dx, ax
+    sti
+    iret
 
 global interrupt_handler_127
 extern sys_call
@@ -171,7 +208,6 @@ interrupt_handler_15:
     popa
     iret
 
-irq_interrupt_handler 32, 0
 irq_interrupt_handler 33, 1
 irq_interrupt_handler 34, 2
 irq_interrupt_handler 35, 3

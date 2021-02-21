@@ -16,14 +16,12 @@ void pic_remap()
     outb(0x21, 0x00);
     outb(0xA1, 0x00);
 
-    outb(PIC1_D, 0b11111101);
+    outb(PIC1_D, 0b11111100);
     outb(PIC2_D, 0b00111111);
 }
 
 void pic_handle(uint8_t i)
 {
-    terminal_writehex(i);
-
     switch(i)
     {
         case 1:
@@ -37,8 +35,6 @@ void pic_handle(uint8_t i)
     }
 
     pic_ack(i);
-
-    //return sc;
 }
 
 void pic_ack(uint8_t i)
@@ -125,16 +121,12 @@ void pic_handle_irq13()
 }
 void pic_handle_irq14()
 {
-    terminal_writehex("a");
-
     inb(0x1F7);
 
     pic_ack(14);
 }
 void pic_handle_irq15()
 {
-    terminal_writehex("a");
-
     inb(0x1F7);
 
     pic_ack(15);

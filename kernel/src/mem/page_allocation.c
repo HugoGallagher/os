@@ -35,8 +35,6 @@ void* pa_init(void* start, multiboot_info_t* mbi)
     // align downwards to page boundary
     page_allocs.available_memory -= page_allocs.available_memory % PAGE_SIZE;
 
-    //terminal_writehex(page_allocs.available_memory);
-
     // calculate total needed pages and align (downwards) to 32 to allow for bitmaps
     uint32_t total_pages = page_allocs.available_memory / PAGE_SIZE;
     uint32_t total_pages_aligned = total_pages - 1;
@@ -45,9 +43,7 @@ void* pa_init(void* start, multiboot_info_t* mbi)
     uint32_t bitmaps_needed = (total_pages_aligned / (32*32*32*32)) * 8;
     page_allocs.bitmaps = bitmaps_needed;
 
-    //page_allocs.b3 = kmalloc(sizeof(Bitmap2) * bitmaps_needed);
     page_allocs.b3 = start;
-    //bzero(page_allocs.b3, sizeof(Bitmap2) * bitmaps_needed);
     for (uint8_t i = 0; i < (32 - bitmaps_needed); i++)
     {
         page_allocs.a |= 1 << (31 - i);
@@ -66,7 +62,6 @@ void* pa_init(void* start, multiboot_info_t* mbi)
                     if (!pa_check_addr(addr, mbi) || addr < 4*1024*1024 * KERNEL_PAGE_TABLES || addr > page_allocs.available_memory)
                     {
                         page_allocs.b3[i].b2[j].b1[k] |= 1 << l;
-                        //terminal_writehex(pa->b3[i].b2[j].b1[k]);
                     }
                 }
             }
@@ -82,7 +77,6 @@ void* pa_init(void* start, multiboot_info_t* mbi)
                 for (uint32_t l = 0; l < 32; l++)
                 {
                     void* addr = (l + k * 32 + j * 32*32 + i * 32*32*32) * PAGE_SIZE;
-                    //terminal_writehex(addr);
 
                     if (!pa_check_addr(addr, mbi) || addr < 4*1024*1024 * KERNEL_PAGE_TABLES || addr > page_allocs.available_memory)
                     {

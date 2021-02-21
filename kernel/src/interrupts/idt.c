@@ -9,19 +9,11 @@
 
 void idt_handle(uint32_t a, uint32_t b, GeneralRegisters rs)
 {
-    terminal_writestring("Exception occurred:\n");
-    terminal_writehex(a);
-    asm("cli");
-    asm("hlt");
+
 }
 void idt_handle_error(uint32_t a, uint32_t b, GeneralRegisters rs)
 {
-    terminal_writestring("Exception occurred:\n");
-    terminal_writehex(a);
-    terminal_writestring("Error code:\n");
-    terminal_writehex(b);
-    asm("cli");
-    asm("hlt");
+    
 }
 
 void (*interrupt_handler_addresses[128])() =
@@ -182,7 +174,7 @@ void idt_fill_256(IDTHeader* ih)
 {
     for (uint8_t i = 0; i < 127; i++)
     {
-        idt_create_descriptor(ih, i, interrupt_handler_addresses[i], true, 3, true, 0x0008);
+        idt_create_descriptor(ih, i, interrupt_handler_addresses[i], true, 3, true, 0x08);
     }
-    idt_create_descriptor(ih, 127, interrupt_handler_addresses[127], true, 3, true, 0x0008);
+    idt_create_descriptor(ih, 127, interrupt_handler_addresses[127], true, 3, true, 0x08);
 }

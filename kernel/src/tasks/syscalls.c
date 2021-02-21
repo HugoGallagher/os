@@ -35,14 +35,14 @@ void sys_msg_ack(GeneralRegisters r, uint32_t eip, uint32_t esp)
 void sys_print(GeneralRegisters r, uint32_t eip, uint32_t esp)
 {
     char* text = r.ebx;
-    uint32_t length = r.ecx;
+    uint32_t length = 14;
 
     terminal_write(text, length);
 }
 void sys_print_hex(GeneralRegisters r, uint32_t eip, uint32_t esp)
 {
-    terminal_writestring("print_hex called: ");
-    terminal_writehex(r.ebx);
+//    terminal_writestring("print_hex called: ");
+//    terminal_writehex(r.ebx);
 }
 
 void (*syscalls[])(GeneralRegisters, uint32_t, uint32_t) =
@@ -56,7 +56,7 @@ void (*syscalls[])(GeneralRegisters, uint32_t, uint32_t) =
     sys_print_hex
 };
 
-void sys_call(GeneralRegisters r, uint32_t eip, uint32_t cs, uint32_t f, uint32_t esp, uint32_t ss)
+void sys_call(GeneralRegisters r, uint32_t eip, uint16_t cs, uint32_t f, uint32_t esp, uint16_t ss)
 {
     uint32_t index = r.eax;
     (*syscalls[index])(r, eip, esp);

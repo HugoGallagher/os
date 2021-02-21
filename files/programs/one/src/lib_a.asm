@@ -1,58 +1,87 @@
 section .text
-
-t_eip:
+t_ebp:
     resb 4
 
 section .data
 
-global asm_exit
-asm_exit:
+global exit
+exit:
+    mov [t_ebp], ebp
+
     mov eax, 0
     int 0x7F
+
+    mov ebp, [t_ebp]
     ret
 
-global asm_yield
-asm_yield:
-    mov eax, [esp]
-    mov [t_eip], eax
+global yield
+yield:
+    mov [t_ebp], ebp
+
     mov eax, 1
     int 0x7F
-    jmp t_eip
 
-global asm_msg_send
-asm_msg_send:
+    pop ebp
+    ret
+
+global msg_send
+msg_send:
+    mov [t_ebp], ebp
+
     mov eax, 2
     mov edx, [esp+4]
     mov ebx, [esp+8]
     mov ecx, [esp+12]
     int 0x7F
+
+    mov ebp, [t_ebp]
     ret
 
-global asm_msg_get
-asm_msg_get:
+global msg_get
+msg_get:
+    mov [t_ebp], ebp
+
     mov eax, 3
     mov ebx, [esp+4]
     mov ecx, [esp+8]
     int 0x7F
+
+    mov ebp, [t_ebp]
     ret
 
-global asm_msg_ack
-asm_msg_ack:
+global msg_ack
+msg_ack:
+    mov [t_ebp], ebp
+
     mov eax, 4
     int 0x7F
+
+    mov ebp, [t_ebp]
     ret
 
-global asm_print
-asm_print:
+global print
+print:
+    mov [t_ebp], ebp
+
     mov eax, 5
     mov ebx, [esp+4]
     mov ecx, [esp+8]
     int 0x7F
+
+    mov ebp, [t_ebp]
     ret
 
-global asm_print_hex
-asm_print_hex:
+global print_hex
+print_hex:
+    mov [t_ebp], ebp
+
     mov eax, 6
     mov ebx, [esp+4]
     int 0x7F
+
+    mov ebp, [t_ebp]
     ret
+
+global asm_loop
+asm_loop:
+    jmp $

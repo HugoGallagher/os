@@ -77,8 +77,6 @@ uint32_t fat32_get_next_cluster(FAT32FS* fs, uint32_t cc)
 
     uint32_t value = fat[index] & 0x0FFFFFFF;
 
-    //terminal_writehex(value);
-
     kfree(fat);
 
     return value;
@@ -100,8 +98,6 @@ FAT32DirEntry fat32_get_file_info(FAT32FS* fs, char* path, uint8_t path_size)
 
     if (path[path_size - 1] == 0x2F)
         path[path_size - 1] = 0x00;
-
-    //char** dirs = kmalloc(depth * path_size);
 
     // array of indexes of paths
     uint8_t dirs_start[depth];

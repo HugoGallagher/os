@@ -5,8 +5,8 @@ t_ebx:
     resb 4
 
 section .text
-global enter_usr
-enter_usr:
+global enter_usr_pl3
+enter_usr_pl3:
     pop eax
 
     popa
@@ -15,14 +15,14 @@ enter_usr:
     mov [t_eax], eax
     mov [t_ebx], ebx
 
-    pop eax
-    pop ebx
-
     mov ax, 0x23
     mov ds, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
+
+    pop eax
+    pop ebx
 
     push 0x23
     push eax
@@ -35,23 +35,40 @@ enter_usr:
 
     iret
 
-global set_usr_srs
-set_usr_srs:
-    mov ax, 0x23
-    mov dx, ax
+global enter_usr_pl0
+extern tm_get_task_stack_base
+enter_usr_pl0:
+    pop eax
+
+    popa
+    popf
+
+    mov [t_eax], eax
+    mov [t_ebx], ebx
+
+    mov ax, 0x10
+    mov ds, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
 
-global exit_usr
-exit_usr:
-    pusha
-    pushf
+    pop eax
+    pop ebx
 
-    call get_eip
+    push 0x10
     push eax
+    pushf
+    push 0x18
+    push ebx
 
-    ret
+    call tm_get_task_stack_base
+    add eax, 4092
+    mov esp, eax
+
+    mov eax, [t_eax]
+    mov ebx, [t_ebx]
+
+    iret
 
 global get_eip;
 get_eip:

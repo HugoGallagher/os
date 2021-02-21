@@ -85,15 +85,14 @@ void terminal_writehex(void* data)
 void terminal_check()
 {
 	if (terminal_row > VGA_HEIGHT)
-	//if (terminal_row > 0)
     {
-//		for (int i = 0; i < VGA_HEIGHT; i++)
-//		{
-//			for (int j = 0; j < VGA_WIDTH; j++)
-//			{
-//				terminal_putentryat(0, terminal_color, j, i);
-//			}
-//		}
+		for (int i = 0; i < VGA_HEIGHT; i++)
+		{
+			for (int j = 0; j < VGA_WIDTH; j++)
+			{
+				terminal_putentryat(0, terminal_color, j, i);
+			}
+		}
 
 		terminal_row = 0;
 		terminal_column = 0;

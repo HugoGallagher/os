@@ -55,6 +55,8 @@ void ex_stack_segment_fault(uint32_t code)
 void ex_gpf(uint32_t code)
 {
     terminal_writestring("GPF occurred\n");
+    terminal_writehex(code);
+    asm("cli"); asm("hlt");
 }
 void ex_page_fault(uint32_t code)
 {
