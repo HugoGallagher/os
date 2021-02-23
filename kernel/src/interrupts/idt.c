@@ -13,7 +13,7 @@ void idt_handle(uint32_t a, uint32_t b, GeneralRegisters rs)
 }
 void idt_handle_error(uint32_t a, uint32_t b, GeneralRegisters rs)
 {
-    
+
 }
 
 void (*interrupt_handler_addresses[128])() =
@@ -83,70 +83,6 @@ void (*interrupt_handler_addresses[128])() =
 	interrupt_handler_62,
 	interrupt_handler_63,
 	interrupt_handler_64,
-	interrupt_handler_65,
-	interrupt_handler_66,
-	interrupt_handler_67,
-	interrupt_handler_68,
-	interrupt_handler_69,
-	interrupt_handler_70,
-	interrupt_handler_71,
-	interrupt_handler_72,
-	interrupt_handler_73,
-	interrupt_handler_74,
-	interrupt_handler_75,
-	interrupt_handler_76,
-	interrupt_handler_77,
-	interrupt_handler_78,
-	interrupt_handler_79,
-	interrupt_handler_80,
-	interrupt_handler_81,
-	interrupt_handler_82,
-	interrupt_handler_83,
-	interrupt_handler_84,
-	interrupt_handler_85,
-	interrupt_handler_86,
-	interrupt_handler_87,
-	interrupt_handler_88,
-	interrupt_handler_89,
-	interrupt_handler_90,
-	interrupt_handler_91,
-	interrupt_handler_92,
-	interrupt_handler_93,
-	interrupt_handler_94,
-	interrupt_handler_95,
-	interrupt_handler_96,
-	interrupt_handler_97,
-	interrupt_handler_98,
-	interrupt_handler_99,
-	interrupt_handler_100,
-	interrupt_handler_101,
-	interrupt_handler_102,
-	interrupt_handler_103,
-	interrupt_handler_104,
-	interrupt_handler_105,
-	interrupt_handler_106,
-	interrupt_handler_107,
-	interrupt_handler_108,
-	interrupt_handler_109,
-	interrupt_handler_110,
-	interrupt_handler_111,
-	interrupt_handler_112,
-	interrupt_handler_113,
-	interrupt_handler_114,
-	interrupt_handler_115,
-	interrupt_handler_116,
-	interrupt_handler_117,
-	interrupt_handler_118,
-	interrupt_handler_119,
-	interrupt_handler_120,
-	interrupt_handler_121,
-	interrupt_handler_122,
-	interrupt_handler_123,
-	interrupt_handler_124,
-	interrupt_handler_125,
-	interrupt_handler_126,
-	interrupt_handler_127,
-	interrupt_handler_128,
 };
 
 IDTDescriptor* idt_create_descriptor(IDTHeader* ih, uint8_t interrupt_code, uint32_t offset, bool in_memory, uint8_t dpl, bool gate_size, uint16_t segment_selector)
@@ -172,9 +108,9 @@ IDTDescriptor* idt_create_descriptor(IDTHeader* ih, uint8_t interrupt_code, uint
 
 void idt_fill_256(IDTHeader* ih)
 {
-    for (uint8_t i = 0; i < 127; i++)
+    for (uint8_t i = 0; i < 64; i++)
     {
         idt_create_descriptor(ih, i, interrupt_handler_addresses[i], true, 3, true, 0x08);
     }
-    idt_create_descriptor(ih, 127, interrupt_handler_addresses[127], true, 3, true, 0x08);
+    idt_create_descriptor(ih, 64, interrupt_handler_addresses[64], true, 3, true, 0x08);
 }

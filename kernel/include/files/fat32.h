@@ -95,7 +95,8 @@ struct FAT32FS
 
 void fat32_init(FAT32FS* fs, MBRPartition partition);
 
-void fat32_read(FAT32FS* fs, uint8_t* buffer, char* path, uint8_t path_size);
+void* fat32_read(FAT32FS* fs, char* path, uint8_t path_size);
+void fat32_read_to_dest(FAT32FS* fs, uint8_t* buffer, char* path, uint8_t path_size);
 
 uint32_t fat32_get_next_cluster(FAT32FS* fs, uint32_t cc);
 uint32_t fat32_get_sector_from_cluster(FAT32FS* fs, uint32_t c);

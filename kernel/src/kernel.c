@@ -24,18 +24,14 @@ void kmain(multiboot_info_t* mbi)
 
     terminal_initialize();
 
-//    terminal_writestring("Initialising page frames\n");
     void* heap_start = pa_init(kernel_end, mbi);
 
-//    terminal_writestring("Initialising heap\n");
     kheap_init(heap_start);
 
     void* p_gdt = kmalloc(64);
-    void* p_idt = kmalloc(1024);
+    void* p_idt = kmalloc(65 * 8 - 1);
 
-//    terminal_writestring("Initialising GDT\n");
-    //tm_init(64);
-    tm_init(4);
+    tm_init(8);
 
     GDTHeader gdt_h;
     gdt_init(&gdt_h, p_gdt, tm_get_tss());
@@ -43,9 +39,8 @@ void kmain(multiboot_info_t* mbi)
     gdt_reload_cs();
     tss_load();
 
-//    terminal_writestring("Initialising IDT\n");
     IDTHeader idt_h;
-    idt_h.size = 1023;
+    idt_h.size = (65 * 8 - 1);
     idt_h.descriptors = p_idt;
     pic_remap();
     pic_init_pit(0);
@@ -63,11 +58,10 @@ void kmain(multiboot_info_t* mbi)
     FAT32FS fat32fs;
     fat32_init(&fat32fs, partition);
 
-    tm_init_servers(&fat32fs, "boot/servers.txt", 16);
+    tm_init_servers(&fat32fs, "sysinfo/servers.txt", 19);
 
     tm_create_task(&fat32fs, false, "programs/one/program.bin", 24);
-    tm_create_task(&fat32fs, false, "programs/two/program.bin", 24);
-//    tm_enter_next_task();
+    tm_enter_next_task();
 
     kernel_loop();
 }

@@ -10,12 +10,15 @@
 #include "files/fat32.h"
 
 // soft limit of 10 servers
-#define SERVER_COUNT 2
-enum SERVERS
+#define SERVER_COUNT 3
+enum ServerTypes
 {
-    SV_GRAPHICS,
+    SV_DISPLAY,
+    SV_INPUT,
     SV_FILESYSTEM,
 };
+
+typedef enum ServerTypes ServerTypes;
 
 struct MessageBus;
 struct Registers;
@@ -94,7 +97,7 @@ struct TaskManager
     TSS* tss;
 
     Task* tasks;
-    Task* servers[SERVER_COUNT];
+    uint16_t servers[SERVER_COUNT];
     uint16_t count;
     uint16_t current_task;
 
@@ -129,6 +132,7 @@ void tm_preempt_pl3(GeneralRegisters r, uint32_t eip, uint16_t cs, uint32_t f, u
 TSS* tm_get_tss();
 bool tm_is_multitasking();
 uint32_t tm_get_task_stack_base();
+uint16_t tm_get_current_task();
 
 void tsk_init(Task* t, uint16_t id, FAT32FS* fs, bool is_server, char* path, uint32_t path_size);
 

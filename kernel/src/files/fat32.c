@@ -48,7 +48,28 @@ void fat32_init(FAT32FS* fs, MBRPartition partition)
     kfree(br);
 }
 
-void fat32_read(FAT32FS* fs, uint8_t* buffer, char* path, uint8_t path_size)
+void* fat32_read(FAT32FS* fs, char* path, uint8_t path_size)
+{
+    FAT32DirEntry dir_entry = fat32_get_file_info(fs, path, path_size);
+
+    if (dir_entry.attributes & 0x10 || dir_entry.size == 0)
+        return;
+
+    uint32_t size_in_clusters = (dir_entry.size - 1);
+    size_in_clusters += (fs->bpb.sector_size * fs->bpb.cluster_size) - size_in_clusters % (fs->bpb.sector_size * fs->bpb.cluster_size);
+    size_in_clusters /= (fs->bpb.sector_size * fs->bpb.cluster_size);
+
+    void* buffer = kmalloc(size_in_clusters * fs->bpb.sector_size);
+    uint32_t current_cluster = (dir_entry.cluster_number_high << 16) + dir_entry.cluster_number_low;
+    for (uint32_t i = 0; i < size_in_clusters; i++)
+    {
+        // assumes cluster size of 1 sector
+        ata_read_to_dest(buffer + i * fs->bpb.sector_size, fat32_get_sector_from_cluster(fs, current_cluster), fs->true_start, fs->bpb.cluster_size);
+    }
+
+    return buffer;
+}
+void fat32_read_to_dest(FAT32FS* fs, uint8_t* buffer, char* path, uint8_t path_size)
 {
     FAT32DirEntry dir_entry = fat32_get_file_info(fs, path, path_size);
 
@@ -142,6 +163,7 @@ FAT32DirEntry fat32_get_file_info(FAT32FS* fs, char* path, uint8_t path_size)
 
         current_dir_entry = fat32_get_dir_entry(fs, current_cluster, name);
         current_cluster = (current_dir_entry.cluster_number_high << 16) + current_dir_entry.cluster_number_low;
+        //terminal_write(name, 12);
     }
 
     return current_dir_entry;
@@ -159,7 +181,7 @@ FAT32DirEntry fat32_get_dir_entry(FAT32FS* fs, uint32_t c, char* n)
 
         for (uint32_t i = 0; i < fs->bpb.sector_size / sizeof(FAT32DirEntry); i++)
         {
-            // for now only 1 LFN is allowed per entry
+            // for now only 1 LFN per entry is supported
             FAT32DirLFNEntry* lfns = &(directory_data[i]);
             bool lfn_present = false;
             uint8_t lfn_c = 0;
@@ -218,11 +240,16 @@ FAT32DirEntry fat32_get_dir_entry(FAT32FS* fs, uint32_t c, char* n)
             }
 
             if (memcmp(name, n, 12))
+            {
+                kfree(directory_data);
                 return current_dir_entry;
+            }
         }
 
         kfree(directory_data);
         current_cluster = fat32_get_next_cluster(fs, current_cluster);
         dir_size++;
     }
+
+    terminal_writestring("File not found\n");
 }

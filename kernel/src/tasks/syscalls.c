@@ -41,8 +41,8 @@ void sys_print(GeneralRegisters r, uint32_t eip, uint32_t esp)
 }
 void sys_print_hex(GeneralRegisters r, uint32_t eip, uint32_t esp)
 {
-//    terminal_writestring("print_hex called: ");
-//    terminal_writehex(r.ebx);
+    terminal_writestring("print_hex called: ");
+    terminal_writehex(r.ebx);
 }
 
 void (*syscalls[])(GeneralRegisters, uint32_t, uint32_t) =

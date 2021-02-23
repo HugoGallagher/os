@@ -33,7 +33,6 @@ interrupt_handler_%1:
 global interrupt_handler_32
 extern tm_is_multitasking
 extern tm_get_task_stack_base
-
 extern tm_preempt_pl0
 extern tm_preempt_pl3
 interrupt_handler_32:
@@ -71,9 +70,9 @@ return_to_pl0:
     sti
     iret
 
-global interrupt_handler_127
+global interrupt_handler_64
 extern sys_call
-    interrupt_handler_127:
+    interrupt_handler_64:
     pusha
     call sys_call
     popa
@@ -258,67 +257,3 @@ no_error_interrupt_handler 60
 no_error_interrupt_handler 61
 no_error_interrupt_handler 62
 no_error_interrupt_handler 63
-no_error_interrupt_handler 64
-no_error_interrupt_handler 65
-no_error_interrupt_handler 66
-no_error_interrupt_handler 67
-no_error_interrupt_handler 68
-no_error_interrupt_handler 69
-no_error_interrupt_handler 70
-no_error_interrupt_handler 71
-no_error_interrupt_handler 72
-no_error_interrupt_handler 73
-no_error_interrupt_handler 74
-no_error_interrupt_handler 75
-no_error_interrupt_handler 76
-no_error_interrupt_handler 77
-no_error_interrupt_handler 78
-no_error_interrupt_handler 79
-no_error_interrupt_handler 80
-no_error_interrupt_handler 81
-no_error_interrupt_handler 82
-no_error_interrupt_handler 83
-no_error_interrupt_handler 84
-no_error_interrupt_handler 85
-no_error_interrupt_handler 86
-no_error_interrupt_handler 87
-no_error_interrupt_handler 88
-no_error_interrupt_handler 89
-no_error_interrupt_handler 90
-no_error_interrupt_handler 91
-no_error_interrupt_handler 92
-no_error_interrupt_handler 93
-no_error_interrupt_handler 94
-no_error_interrupt_handler 95
-no_error_interrupt_handler 96
-no_error_interrupt_handler 97
-no_error_interrupt_handler 98
-no_error_interrupt_handler 99
-no_error_interrupt_handler 100
-no_error_interrupt_handler 101
-no_error_interrupt_handler 102
-no_error_interrupt_handler 103
-no_error_interrupt_handler 104
-no_error_interrupt_handler 105
-no_error_interrupt_handler 106
-no_error_interrupt_handler 107
-no_error_interrupt_handler 108
-no_error_interrupt_handler 109
-no_error_interrupt_handler 110
-no_error_interrupt_handler 111
-no_error_interrupt_handler 112
-no_error_interrupt_handler 113
-no_error_interrupt_handler 114
-no_error_interrupt_handler 115
-no_error_interrupt_handler 116
-no_error_interrupt_handler 117
-no_error_interrupt_handler 118
-no_error_interrupt_handler 119
-no_error_interrupt_handler 120
-no_error_interrupt_handler 121
-no_error_interrupt_handler 122
-no_error_interrupt_handler 123
-no_error_interrupt_handler 124
-no_error_interrupt_handler 125
-no_error_interrupt_handler 126
-;no_error_interrupt_handler 127

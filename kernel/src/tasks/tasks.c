@@ -35,16 +35,13 @@ void tm_init(uint16_t c)
 
 void tm_init_servers(FAT32FS* fs, char* path, uint32_t path_size)
 {
-    uint8_t* servers_info;
-    fat32_read(fs, servers_info, path, path_size);
-    terminal_write(servers_info, 64);
-    terminal_writestring("\n");
+    uint8_t* servers_info = fat32_read(fs, path, path_size);
 
     uint32_t o_current = 0;
     uint32_t i = 0;
     while (i < SERVER_COUNT)
     {
-        uint32_t s_current = servers_info[o_current];
+        uint32_t s_current = servers_info[o_current] - 0x30;
 
         uint32_t o_start = o_current + 2;
         uint32_t o_end = o_start;
@@ -54,9 +51,13 @@ void tm_init_servers(FAT32FS* fs, char* path, uint32_t path_size)
             o_end++;
         }
 
-        tm_create_task(fs, true, servers_info + o_start, o_end - o_start);
+        uint32_t o_size = 1 + o_end - o_start;
 
-        o_current = o_end;
+        *(servers_info + o_start + o_size - 1) = 0;
+        uint16_t server_id = tm_create_task(fs, true, servers_info + o_start, o_size);
+        task_manager.servers[s_current] = server_id;
+
+        o_current = o_end + 1;
         i++;
     }
 }
@@ -67,13 +68,14 @@ void tm_enter_next_task()
     uint16_t index = task_manager.current_task;
     while (iterated < task_manager.count)
     {
-
+        terminal_writehex(iterated);
         index++;
         if (index >= task_manager.count)
         index = 0;
 
         uint16_t i_pd = (index & 0b11111) >> 5;
         uint16_t i_b = index % 32;
+
 
         if (task_manager.task_bitmaps[i_pd] & 1 << i_b)
         {
@@ -175,6 +177,8 @@ void tm_msg_transmit(uint32_t dst, uint8_t* data, uint32_t len)
     //MessageBus* msg_bus = 1021 * (4096*1024) + task_manager.current_task * 4096;
     MessageBus* msg_bus = 1021 * (4096*1024) + dst * 4096;
 
+    len++;
+
     uint32_t offset = 0;
     uint32_t index = 0;
     for (uint32_t i = 0; i < 64; i++)
@@ -185,6 +189,8 @@ void tm_msg_transmit(uint32_t dst, uint8_t* data, uint32_t len)
         index = i;
         offset += msg_bus->lengths[i];
     }
+    msg_bus->data[offset] = task_manager.current_task;
+    offset++;
     memcpy(msg_bus->data + offset, data, len);
     msg_bus->lengths[index] = len;
 }
@@ -250,6 +256,7 @@ void tsk_init(Task* t, uint16_t id, FAT32FS* fs, bool is_server, char* path, uin
     t->registers.eip = 0;
     t->registers.esp = 0xBFFFFFFB;
 
+    // set IOPL
     if (is_server)
         t->registers.flags |= 0x3000;
 
@@ -267,7 +274,6 @@ void tsk_init(Task* t, uint16_t id, FAT32FS* fs, bool is_server, char* path, uin
 
     uint32_t s;
     s = file_info.size;
-
     t->size = s;
 
     if (s == 0)
@@ -311,12 +317,17 @@ void tsk_init(Task* t, uint16_t id, FAT32FS* fs, bool is_server, char* path, uin
     {
         t->pt_stack->entries[i].data = pa_alloc() | (1 << 0 | 1 << 1 | 1 << 2);
     }
+    memcpy(&(t->page_dir->entries[768]), &(task_manager.k_page_dir->entries[768]), sizeof(PageTableEntry) * (1024 - 768));
+
+    FAT32DirEntry file_infoa = fat32_get_file_info(fs, path, path_size);
 
     // if this is callable while multitasking a lock should be used
     pg_load_pd(t->page_dir->entries);
 
+    FAT32DirEntry file_infoasdf = fat32_get_file_info(fs, path, path_size);
+
     // load the program to 0x0
-    fat32_read(fs, 0x0, path, path_size);
+    fat32_read_to_dest(fs, 0x0, path, path_size);
 
     pg_load_pd(task_manager.k_page_dir->entries);
 }
@@ -370,6 +381,10 @@ bool tm_is_multitasking()
 uint32_t tm_get_task_stack_base()
 {
     return 1022 * (4*1024*1024) + task_manager.current_task * 4096;
+}
+uint16_t tm_get_current_task()
+{
+    return task_manager.current_task;
 }
 
 void ta_init(uint32_t c)

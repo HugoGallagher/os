@@ -52,8 +52,6 @@ void kheap_init(void* start)
 
 void kheap_push_block()
 {
-    //kheap_add_pt();
-
     // preserve old data to copy and then free
     void* old_nodes = kheap.allocs.node_storage.nodes;
     void* old_node_allocs = kheap.allocs.node_storage.node_allocs;
