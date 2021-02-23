@@ -1,6 +1,7 @@
 isodir/*
 kernel/build/*
 *.img
+*.o
 
 makefile
 bochsrc.txt
