@@ -61,24 +61,39 @@ msg_ack:
     mov ebp, [t_ebp]
     ret
 
-global print
-print:
+global d_copy_buffer
+d_copy_buffer:
     mov [t_ebp], ebp
 
     mov eax, 5
     mov ebx, [esp+4]
-    mov ecx, [esp+8]
     int SYS_CALL
 
     mov ebp, [t_ebp]
     ret
 
-global print_hex
-print_hex:
+global d_put_pixel
+d_put_pixel:
     mov [t_ebp], ebp
 
     mov eax, 6
     mov ebx, [esp+4]
+    mov ecx, [esp+8]
+    mov edx, [esp+12]
+    int SYS_CALL
+
+    mov ebp, [t_ebp]
+    ret
+
+global d_put_pixels
+d_put_pixels:
+    mov [t_ebp], ebp
+
+    mov eax, 7
+    mov ebx, [esp+4]
+    mov ecx, [esp+8]
+    mov edx, [esp+12]
+    mov esi, [esp+16]
     int SYS_CALL
 
     mov ebp, [t_ebp]
