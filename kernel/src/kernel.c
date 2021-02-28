@@ -16,8 +16,6 @@
 #include "files/ata.h"
 #include "files/fat32.h"
 
-typedef void (*program_func)(void);
-
 void kmain(multiboot_info_t* mbi)
 {
     kernel_end = &_kernel_end;
@@ -57,10 +55,10 @@ void kmain(multiboot_info_t* mbi)
 
     FAT32FS fat32fs;
     fat32_init(&fat32fs, partition);
+    tm_set_fs(&fat32fs);
 
     tm_init_servers(&fat32fs, "sysinfo/servers.txt", 19);
 
-    tm_create_task(&fat32fs, false, "programs/one/program.bin", 24);
     tm_enter_next_task();
 
     kernel_loop();

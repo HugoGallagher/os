@@ -1,5 +1,6 @@
 isodir/*
 kernel/build/*
+files
 *.img
 *.o
 

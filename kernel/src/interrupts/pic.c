@@ -2,6 +2,7 @@
 
 #include "interface/terminal.h"
 #include "interface/cli.h"
+#include "tasks/tasks.h"
 
 void pic_remap()
 {
@@ -66,8 +67,13 @@ void pic_handle_irq1()
 {
     uint8_t sc = inb(0x60);
 
-    if (sc & 0x80) {} // this should track keys like shift
-    else { cli_send_char(sc); }
+    uint8_t test[] = { 2, 3, 4};
+
+    if (tm_is_multitasking())
+        tm_msg_transmit(tm_get_server_id(SV_INPUT), 0x65, 1);
+
+//    if (sc & 0x80) {} // this should track keys like shift
+//    else { cli_send_char(sc); }
 
     pic_ack(1);
 }

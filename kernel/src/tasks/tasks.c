@@ -54,7 +54,7 @@ void tm_init_servers(FAT32FS* fs, char* path, uint32_t path_size)
         uint32_t o_size = 1 + o_end - o_start;
 
         *(servers_info + o_start + o_size - 1) = 0;
-        uint16_t server_id = tm_create_task(fs, true, servers_info + o_start, o_size);
+        uint16_t server_id = tm_create_task_from_fs(fs, true, servers_info + o_start, o_size);
         task_manager.servers[s_current] = server_id;
 
         o_current = o_end + 1;
@@ -68,7 +68,6 @@ void tm_enter_next_task()
     uint16_t index = task_manager.current_task;
     while (iterated < task_manager.count)
     {
-        terminal_writehex(iterated);
         index++;
         if (index >= task_manager.count)
         index = 0;
@@ -110,7 +109,11 @@ void tm_enter_task(uint16_t id)
         enter_usr_pl3(task_manager.tasks[id].registers);
 }
 
-uint16_t tm_create_task(FAT32FS* fs, bool is_server, char* path, uint32_t path_size)
+uint16_t tm_create_task(bool is_server, char* path, uint32_t path_size)
+{
+    tm_create_task_from_fs(task_manager.fs_primary, is_server, path, path_size);
+}
+uint16_t tm_create_task_from_fs(FAT32FS* fs, bool is_server, char* path, uint32_t path_size)
 {
     uint16_t c_aligned = task_manager.count + 31;
     c_aligned &= ~0b11111;
@@ -199,7 +202,11 @@ void tm_msg_get(uint8_t** p_data, uint32_t* p_len)
     MessageBus* msg_bus = 1021 * (4096*1024) + task_manager.current_task * 4096;
 
     if (msg_bus->lengths[0] == 0)
+    {
+        *p_data = 0;
+        *p_len = 0;
         return;
+    }
 
     uint32_t offset = 0;
     uint32_t index = 0;
@@ -263,10 +270,10 @@ void tsk_init(Task* t, uint16_t id, FAT32FS* fs, bool is_server, char* path, uin
     // find 2 4kb blocks and assign them as the kernel stack and message bus
     uint32_t kernel_stack = pa_alloc();
     PageTableEntry* ks_pte = pg_get_pte(1022, id);
-    ks_pte->data = kernel_stack + (1 << 0) + (1 << 1);
+    ks_pte->data = kernel_stack + (1 << 0 | 1 << 1);
     uint32_t message_bus = pa_alloc();
     PageTableEntry* mb_pte = pg_get_pte(1021, id);
-    mb_pte->data = message_bus + (1 << 0) + (1 << 1) + (1 << 2);
+    mb_pte->data = message_bus + (1 << 0 | 1 << 1 | 1 << 2);
 
     t->in_pl0 = false;
 
@@ -385,6 +392,14 @@ uint32_t tm_get_task_stack_base()
 uint16_t tm_get_current_task()
 {
     return task_manager.current_task;
+}
+uint16_t tm_get_server_id(ServerType type)
+{
+    return task_manager.servers[type];
+}
+void tm_set_fs(FAT32FS* fs)
+{
+    task_manager.fs_primary = fs;
 }
 
 void ta_init(uint32_t c)

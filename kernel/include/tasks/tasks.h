@@ -11,14 +11,14 @@
 
 // soft limit of 10 servers
 #define SERVER_COUNT 3
-enum ServerTypes
+enum ServerType
 {
     SV_DISPLAY,
     SV_INPUT,
     SV_FILESYSTEM,
 };
 
-typedef enum ServerTypes ServerTypes;
+typedef enum ServerType ServerType;
 
 struct MessageBus;
 struct Registers;
@@ -101,6 +101,8 @@ struct TaskManager
     uint16_t count;
     uint16_t current_task;
 
+    FAT32FS* fs_primary;
+
     TaskAllocater task_allocs;
 
     PageDirectory* k_page_dir;
@@ -117,7 +119,8 @@ void tm_init_servers(FAT32FS* fs, char* path, uint32_t path_size);
 void tm_enter_next_task();
 void tm_enter_task(uint16_t id);
 
-uint16_t tm_create_task(FAT32FS* fs, bool is_server, char* path, uint32_t path_size);
+uint16_t tm_create_task(bool is_server, char* path, uint32_t path_size);
+uint16_t tm_create_task_from_fs(FAT32FS* fs, bool is_server, char* path, uint32_t path_size);
 void tm_delete_active_task();
 
 void tm_msg_transmit(uint32_t dst, uint8_t* data, uint32_t len);
@@ -133,6 +136,8 @@ TSS* tm_get_tss();
 bool tm_is_multitasking();
 uint32_t tm_get_task_stack_base();
 uint16_t tm_get_current_task();
+uint16_t tm_get_server_id(ServerType type);
+void tm_set_fs(FAT32FS* fs);
 
 void tsk_init(Task* t, uint16_t id, FAT32FS* fs, bool is_server, char* path, uint32_t path_size);
 

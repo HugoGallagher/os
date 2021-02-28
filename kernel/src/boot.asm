@@ -93,7 +93,7 @@ l5:
 
     ; 3rd-last pde is for message buses
     mov eax, pd_boot - 0xC0000000
-    mov ebx, pt_buses - 0xC0000000 + 0x003
+    mov ebx, pt_buses - 0xC0000000 + 0x007
     mov [eax+1021*4], ebx
 
     mov eax, pd_boot - 0xC0000000
