@@ -61,6 +61,32 @@ void tm_init_servers(FAT32FS* fs, char* path, uint32_t path_size)
         i++;
     }
 }
+void tm_init_startup(FAT32FS* fs, char* path, uint32_t path_size)
+{
+    uint8_t* startup_info = fat32_read(fs, path, path_size);
+    FAT32DirEntry startup_info_de = fat32_get_file_info(fs, path, path_size);
+
+    uint32_t o_current = 0;
+    uint32_t i = 0;
+    while (o_current < startup_info_de.size)
+    {
+        uint32_t o_start = o_current;
+        uint32_t o_end = o_start;
+
+        while (startup_info[o_end] != 0xA)
+        {
+            o_end++;
+        }
+
+        uint32_t o_size = 1 + o_end - o_start;
+
+        *(startup_info + o_start + o_size - 1) = 0;
+        tm_create_task_from_fs(fs, false, startup_info + o_start, o_size);
+
+        o_current = o_end + 1;
+        i++;
+    }
+}
 
 void tm_enter_next_task()
 {
@@ -74,7 +100,6 @@ void tm_enter_next_task()
 
         uint16_t i_pd = (index & 0b11111) >> 5;
         uint16_t i_b = index % 32;
-
 
         if (task_manager.task_bitmaps[i_pd] & 1 << i_b)
         {
@@ -184,14 +209,21 @@ void tm_msg_transmit(uint32_t dst, uint8_t* data, uint32_t len)
 
     uint32_t offset = 0;
     uint32_t index = 0;
-    for (uint32_t i = 0; i < 64; i++)
+    for (uint32_t i = 0; i < 65; i++)
     {
+        if (i == 64)
+            return;
+
         if (msg_bus->lengths[i] == 0)
             break;
 
         index = i;
         offset += msg_bus->lengths[i];
     }
+
+    if (len >= (MAX_MSG_DATA - offset))
+        return;
+
     msg_bus->data[offset] = task_manager.current_task;
     offset++;
     memcpy(msg_bus->data + offset, data, len);
@@ -395,6 +427,8 @@ uint16_t tm_get_current_task()
 }
 uint16_t tm_get_server_id(ServerType type)
 {
+    if (type >= SERVER_COUNT)
+        return;
     return task_manager.servers[type];
 }
 void tm_set_fs(FAT32FS* fs)

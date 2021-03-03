@@ -97,7 +97,6 @@ void* kmalloc(uint32_t s)
     s &= ~(0b111111);
 
     uint32_t size = s;
-    //terminal_writehex(size);
 
     LinkedList1Node* current_node = kheap.allocs.head;
     LinkedList1Node* next_node = current_node->next;
@@ -107,7 +106,8 @@ void* kmalloc(uint32_t s)
     bool found_node = false;
     while (current_node->next != kheap.allocs.tail)
     {
-        if (s <= (next_alloc->data - (current_alloc->data + current_alloc->size)))
+        uint32_t gap = (next_alloc->data - (current_alloc->data + current_alloc->size));
+        if (s <= gap && gap < next_alloc->data)
         {
             // there is space after all allocations
             uint32_t index = ll1_insert_return_index(&(kheap.allocs), current_node, 0);

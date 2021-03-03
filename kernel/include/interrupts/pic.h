@@ -28,7 +28,6 @@ void pic_eoi(uint8_t i);
 
 void pic_init_pit(uint16_t divider);
 
-void pic_handle_irq0();
 void pic_handle_irq1();
 void pic_handle_irq2();
 void pic_handle_irq3();

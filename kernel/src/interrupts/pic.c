@@ -1,7 +1,6 @@
 #include "interrupts/pic.h"
 
 #include "interface/terminal.h"
-#include "interface/cli.h"
 #include "tasks/tasks.h"
 
 void pic_remap()
@@ -25,17 +24,54 @@ void pic_handle(uint8_t i)
 {
     switch(i)
     {
-        case 1:
-            pic_handle_irq0();
-            break;
         case 2:
             pic_handle_irq1();
+            break;
+        case 3:
+            pic_handle_irq1();
+            break;
+        case 4:
+            pic_handle_irq3();
+            break;
+        case 5:
+            pic_handle_irq4();
+            break;
+        case 6:
+            pic_handle_irq5();
+            break;
+        case 7:
+            pic_handle_irq6();
+            break;
+        case 8:
+            pic_handle_irq7();
+            break;
+        case 9:
+            pic_handle_irq8();
+            break;
+        case 10:
+            pic_handle_irq9();
+            break;
+        case 11:
+            pic_handle_irq10();
+            break;
+        case 12:
+            pic_handle_irq11();
+            break;
+        case 13:
+            pic_handle_irq12();
+            break;
+        case 14:
+            pic_handle_irq13();
+            break;
+        case 15:
+            pic_handle_irq14();
+            break;
+        case 16:
+            pic_handle_irq15();
             break;
         default:
             pic_ack(i);
     }
-
-    pic_ack(i);
 }
 
 void pic_ack(uint8_t i)
@@ -56,24 +92,12 @@ void pic_init_pit(uint16_t divider)
     outb(0x40, divider & 0xFF);
     outb(0x40, divider >> 8);
 }
-
-void pic_handle_irq0()
-{
-    //terminal_writestring("Ticked!\n");
-
-    pic_ack(0);
-}
 void pic_handle_irq1()
 {
     uint8_t sc = inb(0x60);
 
-    uint8_t test[] = { 2, 3, 4};
-
     if (tm_is_multitasking())
         tm_msg_transmit(tm_get_server_id(SV_INPUT), 0x65, 1);
-
-//    if (sc & 0x80) {} // this should track keys like shift
-//    else { cli_send_char(sc); }
 
     pic_ack(1);
 }
@@ -127,13 +151,9 @@ void pic_handle_irq13()
 }
 void pic_handle_irq14()
 {
-    inb(0x1F7);
-
     pic_ack(14);
 }
 void pic_handle_irq15()
 {
-    inb(0x1F7);
-
     pic_ack(15);
 }

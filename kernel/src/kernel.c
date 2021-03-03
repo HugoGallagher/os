@@ -29,7 +29,7 @@ void kmain(multiboot_info_t* mbi)
     void* p_gdt = kmalloc(64);
     void* p_idt = kmalloc(65 * 8 - 1);
 
-    tm_init(8);
+    tm_init(64);
 
     GDTHeader gdt_h;
     gdt_init(&gdt_h, p_gdt, tm_get_tss());
@@ -58,6 +58,7 @@ void kmain(multiboot_info_t* mbi)
     tm_set_fs(&fat32fs);
 
     tm_init_servers(&fat32fs, "sysinfo/servers.txt", 19);
+    tm_init_startup(&fat32fs, "sysinfo/startup.txt", 19);
 
     tm_enter_next_task();
 

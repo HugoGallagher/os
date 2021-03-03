@@ -35,10 +35,12 @@ typedef struct TaskAllocater TaskAllocater;
 typedef struct TaskManager TaskManager;
 
 // messages are stored in a stack-like structure
+#define MAX_MSG_SIZE 64
+#define MAX_MSG_DATA 3968
 struct MessageBus
 {
-    uint16_t lengths[64];
-    uint8_t data[3968];
+    uint16_t lengths[MAX_MSG_SIZE];
+    uint8_t data[MAX_MSG_DATA];
 } __attribute__((packed));
 
 struct Registers
@@ -115,6 +117,7 @@ static TaskManager task_manager;
 void tm_init(uint16_t c);
 
 void tm_init_servers(FAT32FS* fs, char* path, uint32_t path_size);
+void tm_init_startup(FAT32FS* fs, char* path, uint32_t path_size);
 
 void tm_enter_next_task();
 void tm_enter_task(uint16_t id);

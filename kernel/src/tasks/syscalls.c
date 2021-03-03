@@ -66,15 +66,13 @@ void sys_d_put_pixel(GeneralRegisters r, uint32_t eip, uint32_t esp)
 }
 void sys_d_put_pixels(GeneralRegisters r, uint32_t eip, uint32_t esp)
 {
-    if (tm_get_current_task() != tm_get_server_id(SV_DISPLAY))
-        return;
+//    if (tm_get_current_task() != tm_get_server_id(SV_DISPLAY))
+//        return;
 
     uint32_t x = r.ebx;
     uint32_t y = r.ecx;
     char* data = r.edx;
     uint32_t length = r.esi;
-
-    terminal_write(data, length);
 
     for (uint32_t i = 0; i < length; i++)
     {

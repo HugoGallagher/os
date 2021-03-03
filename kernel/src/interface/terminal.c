@@ -85,7 +85,7 @@ void terminal_hex(void* data)
     terminal_column = 0;
 
     terminal_check();
-	
+
 }
 
 void terminal_check()
